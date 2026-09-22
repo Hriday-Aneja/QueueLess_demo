@@ -1,18 +1,37 @@
 <?php
-
+/**
+ * Location: backend/core/QueueStateMachine.php
+ *
+ * Defines every valid queue status and which transitions between
+ * statuses are allowed. This file has no database calls — it is
+ * pure logic, so QueueEngine.php and NoShowHandler.php etc. can all
+ * ask it "is this transition allowed?" before writing anything.
+ *
+ * States:
+ *   WAITING    → patient is in the queue, not yet next
+ *   NEXT       → patient is next to be consulted
+ *   ARRIVING   → patient tapped "I'm on my way"
+ *   CHECKED_IN → reception has checked the patient in physically
+ *   CONSULTING → patient is currently with the doctor
+ *   COMPLETED  → consultation finished
+ *   CANCELLED  → appointment/token cancelled
+ *   NO_SHOW    → patient did not arrive within the grace period
+ *   LATE       → patient arrived after their turn was given up
+ *   REQUEUE    → a late/no-show patient has been placed back in the queue
+ */
 
 class QueueStateMachine
 {
-    public const WAITING    = 'WAITING';
-    public const NEXT       = 'NEXT';
-    public const ARRIVING   = 'ARRIVING';
-    public const CHECKED_IN = 'CHECKED_IN';
-    public const CONSULTING = 'CONSULTING';
-    public const COMPLETED  = 'COMPLETED';
-    public const CANCELLED  = 'CANCELLED';
-    public const NO_SHOW    = 'NO_SHOW';
-    public const LATE       = 'LATE';
-    public const REQUEUE    = 'REQUEUE';
+    public const WAITING    = 'waiting';
+    public const NEXT       = 'next';
+    public const ARRIVING   = 'arriving';
+    public const CHECKED_IN = 'checked_in';
+    public const CONSULTING = 'consulting';
+    public const COMPLETED  = 'completed';
+    public const CANCELLED  = 'cancelled';
+    public const NO_SHOW    = 'no_show';
+    public const LATE       = 'late';
+    public const REQUEUE    = 'requeue';
 
     public const ALL_STATES = [
         self::WAITING, self::NEXT, self::ARRIVING, self::CHECKED_IN,
