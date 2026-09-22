@@ -19,8 +19,8 @@ if (Token::findById($tokenId) === null) {
 }
 
 try {
-    $result = QueueEngine::requeue($tokenId);
-} catch (RuntimeException $e) {
+    $result = QueueEngine::startConsultation($tokenId);
+} catch (InvalidArgumentException | RuntimeException $e) {
     Response::error($e->getMessage(), 409);
 }
 

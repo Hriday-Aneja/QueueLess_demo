@@ -122,6 +122,11 @@ Response `data`: `{ "status": "LATE" }`
 Request: `{ "token_id": 121 }`
 Response `data`: `{ "status": "WAITING", "queue_position": 6 }`
 
+### POST /api/queue/start-consultation  *(reception/admin only)*
+Moves a token from NEXT/ARRIVING/CHECKED_IN to CONSULTING. Needed for the first patient of the day, since `complete.php` only works on an already-CONSULTING token.
+Request: `{ "token_id": 118 }`
+Response `data`: `{ "status": "consulting" }`
+
 ### POST /api/queue/complete  *(reception only)*
 Marks the current consultation done and promotes the next patients.
 Request: `{ "token_id": 118 }`  *(the token currently CONSULTING)*
@@ -176,5 +181,5 @@ Response `data`: same shape, echoed back.
 - `500` server error (message is generic; real cause is in backend/logs/app.log)
 
 ## Queue statuses
-`WAITING` → `NEXT` → `ARRIVING`/`CHECKED_IN` → `CONSULTING` → `COMPLETED`
-Side paths: `NO_SHOW` → `LATE` → `REQUEUE` → back into `WAITING`/`NEXT`. `CANCELLED` is terminal from most states.
+`waiting` → `next` → `arriving`/`checked_in` → `consulting` → `completed`
+Side paths: `no_show` → `late` → `requeue` → back into `waiting`/`next`. `cancelled` is terminal from most states.
