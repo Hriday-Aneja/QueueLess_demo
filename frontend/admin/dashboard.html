@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard · QueueLess</title>
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body class="admin-app-page" data-requires-auth="admin" hidden>
+
+  <header class="admin-topbar">
+    <div class="admin-topbar-brand">
+      <span class="auth-brand-mark">Q</span>
+      <span>QueueLess Admin</span>
+    </div>
+    <div class="admin-topbar-user">
+      <span id="adminUserName"></span>
+      <button type="button" id="logoutBtn" class="btn-secondary">Log Out</button>
+    </div>
+  </header>
+
+  <main class="admin-main">
+    <!--
+      Phase 1 scope only: authentication + session guard.
+      Dashboard KPIs, doctor management, queue rules, analytics etc.
+      are implemented in later phases.
+    -->
+    <div class="placeholder-panel">
+      <h2>You're logged in as an administrator.</h2>
+      <p>Dashboard widgets, doctor management, queue rules and analytics will appear here in later phases.</p>
+    </div>
+  </main>
+
+  <script src="../shared/js/api-client.js"></script>
+  <script src="js/admin.js"></script>
+</body>
+</html>

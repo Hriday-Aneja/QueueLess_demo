@@ -1,0 +1,208 @@
+/* ==========================================================
+   QueueLess — Admin Panel styles
+   Phase 1: auth pages (login) + minimal app shell.
+   Dashboard/table/chart styles will be added in later phases.
+   ========================================================== */
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  background: #f4f6fb;
+  color: #1f2430;
+}
+
+/* ---- Login / auth page ---------------------------------- */
+
+.auth-wrapper {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 380px;
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 32px 28px;
+  box-shadow: 0 10px 30px rgba(20, 30, 60, 0.08);
+}
+
+.auth-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.auth-brand-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: #2f5bea;
+  color: #fff;
+  font-weight: 700;
+  font-size: 18px;
+}
+
+.auth-brand h1 {
+  margin: 0;
+  font-size: 17px;
+}
+
+.auth-brand p {
+  margin: 0;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.auth-title {
+  margin: 0 0 4px;
+  font-size: 22px;
+}
+
+.auth-subtitle {
+  margin: 0 0 24px;
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.form-group {
+  margin-bottom: 16px;
+  text-align: left;
+}
+
+.form-group label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: #33384a;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #d7dbe6;
+  border-radius: 8px;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.form-group input:focus {
+  border-color: #2f5bea;
+}
+
+.form-group input.input-invalid {
+  border-color: #e0503f;
+}
+
+.field-error {
+  display: block;
+  min-height: 16px;
+  font-size: 12px;
+  color: #e0503f;
+  margin-top: 4px;
+}
+
+.form-alert {
+  background: #fdecea;
+  border: 1px solid #f3c1bb;
+  color: #a4271f;
+  font-size: 13px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.btn-primary {
+  width: 100%;
+  padding: 11px 12px;
+  border: none;
+  border-radius: 8px;
+  background: #2f5bea;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, opacity 0.15s ease;
+}
+
+.btn-primary:hover {
+  background: #2649c4;
+}
+
+.btn-primary:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  padding: 8px 14px;
+  border: 1px solid #d7dbe6;
+  border-radius: 8px;
+  background: #fff;
+  color: #33384a;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.btn-secondary:hover {
+  background: #f4f6fb;
+}
+
+/* ---- App shell (dashboard + future admin pages) ---------- */
+
+.admin-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 24px;
+  background: #ffffff;
+  border-bottom: 1px solid #e5e8f0;
+}
+
+.admin-topbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.admin-topbar-user {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+  color: #33384a;
+}
+
+.admin-main {
+  padding: 32px 24px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.placeholder-panel {
+  background: #fff;
+  border: 1px dashed #d7dbe6;
+  border-radius: 12px;
+  padding: 32px;
+  text-align: center;
+  color: #4b5163;
+}
+
+.placeholder-panel h2 {
+  margin-top: 0;
+}

@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Login · QueueLess</title>
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body class="admin-auth-page">
+
+  <main class="auth-wrapper">
+    <div class="auth-card">
+      <div class="auth-brand">
+        <span class="auth-brand-mark">Q</span>
+        <div>
+          <h1>QueueLess</h1>
+          <p>Admin Panel</p>
+        </div>
+      </div>
+
+      <h2 class="auth-title">Sign in</h2>
+      <p class="auth-subtitle">Restricted to administrator accounts.</p>
+
+      <form id="adminLoginForm" novalidate>
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input type="email" id="email" name="email" autocomplete="username" required>
+          <span class="field-error" id="emailError"></span>
+        </div>
+
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" name="password" autocomplete="current-password" required>
+          <span class="field-error" id="passwordError"></span>
+        </div>
+
+        <div class="form-alert" id="formAlert" role="alert" hidden></div>
+
+        <button type="submit" class="btn-primary" id="loginBtn">
+          <span id="loginBtnText">Log In</span>
+        </button>
+      </form>
+    </div>
+  </main>
+
+  <script src="../shared/js/api-client.js"></script>
+  <script src="js/admin.js"></script>
+</body>
+</html>
