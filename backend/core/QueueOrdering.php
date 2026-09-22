@@ -9,12 +9,19 @@ class QueueOrdering
      * (token_number). Call this after any event that changes the
      * queue: new token, cancellation, no-show, requeue, completion.
      */
-    public static function recalculate(int $doctorId, string $date): void
+    public static function recalculate(int $doctorId, string $date, array $pushToEndTokenIds = []): void
     {
         $rules = QueueRules::forDoctor($doctorId);
         $tokens = self::activeTokens($doctorId, $date);
 
-        usort($tokens, function ($a, $b) use ($rules) {
+        usort($tokens, function ($a, $b) use ($rules, $pushToEndTokenIds) {
+            $aPushed = in_array((int) $a['token_id'], $pushToEndTokenIds, true);
+            $bPushed = in_array((int) $b['token_id'], $pushToEndTokenIds, true);
+
+            if ($aPushed !== $bPushed) {
+                return $aPushed ? 1 : -1; // pushed tokens always sort after everyone else
+            }
+
             $urgencyDiff = QueueRules::urgencyRank($a['priority']) <=> QueueRules::urgencyRank($b['priority']);
             if ($urgencyDiff !== 0) {
                 return $urgencyDiff;

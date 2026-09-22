@@ -54,8 +54,7 @@ class TokenGenerator
         // 0 here is just a placeholder to satisfy the NOT NULL-ish intent.
         QueueStatus::createForToken($tokenId, 0);
 
-        QueueOrdering::recalculate($doctorId, $date);
-        QueueOrdering::promoteNextIfNeeded($doctorId, $date);
+        QueueEvents::afterTokenCreated($doctorId, $date);
 
         $status = QueueStatus::findByTokenId($tokenId);
         $patientsAhead = QueueStatus::countAhead($doctorId, $date, (int) $status['queue_position']);
