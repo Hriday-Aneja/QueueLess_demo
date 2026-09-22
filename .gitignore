@@ -1,0 +1,4 @@
+backend/config/config.local.php
+backend/logs/*.log
+.DS_Store
+Thumbs.db
