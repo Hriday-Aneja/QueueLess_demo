@@ -20,14 +20,104 @@
   </header>
 
   <main class="admin-main">
-    <!--
-      Phase 1 scope only: authentication + session guard.
-      Dashboard KPIs, doctor management, queue rules, analytics etc.
-      are implemented in later phases.
-    -->
-    <div class="placeholder-panel">
-      <h2>You're logged in as an administrator.</h2>
-      <p>Dashboard widgets, doctor management, queue rules and analytics will appear here in later phases.</p>
+
+    <div class="dash-header">
+      <div>
+        <h1 class="dash-title">Dashboard</h1>
+        <p class="dash-subtitle" id="dashDate">—</p>
+      </div>
+      <div class="dash-header-actions">
+        <span class="dash-updated" id="dashUpdated"></span>
+        <button type="button" class="btn-secondary" id="refreshBtn">⟳ Refresh</button>
+      </div>
+    </div>
+
+    <div class="dash-alert" id="dashError" role="alert" hidden>
+      <span id="dashErrorText">Something went wrong.</span>
+      <button type="button" class="btn-secondary" id="retryBtn">Retry</button>
+    </div>
+
+    <div class="dash-loading" id="dashLoading">
+      <div class="kpi-grid" id="kpiSkeleton">
+        <div class="kpi-card skeleton"></div>
+        <div class="kpi-card skeleton"></div>
+        <div class="kpi-card skeleton"></div>
+        <div class="kpi-card skeleton"></div>
+        <div class="kpi-card skeleton"></div>
+        <div class="kpi-card skeleton"></div>
+        <div class="kpi-card skeleton"></div>
+      </div>
+    </div>
+
+    <div id="dashContent" hidden>
+
+      <!-- KPI cards -->
+      <section class="kpi-grid" id="kpiGrid" aria-label="Key metrics"></section>
+
+      <!-- Charts -->
+      <section class="dash-panels">
+        <div class="panel">
+          <h2 class="panel-title">Appointment Status Breakdown</h2>
+          <div class="bar-chart" id="statusChart"></div>
+        </div>
+        <div class="panel">
+          <h2 class="panel-title">Appointments by Hour</h2>
+          <div class="bar-chart bar-chart-vertical" id="hourlyChart"></div>
+        </div>
+      </section>
+
+      <!-- Today's appointments -->
+      <section class="panel">
+        <div class="panel-header">
+          <h2 class="panel-title">Today's Appointments</h2>
+          <span class="panel-count" id="apptCount"></span>
+        </div>
+        <div class="table-scroll">
+          <table class="data-table" id="apptTable">
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>Patient</th>
+                <th>Doctor</th>
+                <th>Department</th>
+                <th>Type</th>
+                <th>Priority</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="apptTableBody"></tbody>
+          </table>
+          <p class="empty-state" id="apptEmpty" hidden>No appointments today.</p>
+        </div>
+      </section>
+
+      <!-- Current queue -->
+      <section class="panel">
+        <div class="panel-header">
+          <h2 class="panel-title">Current Queue</h2>
+          <span class="panel-count" id="queueCount"></span>
+        </div>
+        <div class="table-scroll">
+          <table class="data-table" id="queueTable">
+            <thead>
+              <tr>
+                <th>Token</th>
+                <th>Patient</th>
+                <th>Doctor</th>
+                <th>Department</th>
+                <th>Type</th>
+                <th>Priority</th>
+                <th>Status</th>
+                <th>Position</th>
+                <th>ETA</th>
+              </tr>
+            </thead>
+            <tbody id="queueTableBody"></tbody>
+          </table>
+          <p class="empty-state" id="queueEmpty" hidden>No one is currently in the queue.</p>
+        </div>
+      </section>
+
     </div>
   </main>
 

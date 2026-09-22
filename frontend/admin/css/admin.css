@@ -206,3 +206,302 @@ body {
 .placeholder-panel h2 {
   margin-top: 0;
 }
+
+/* ==========================================================
+   Phase 2 — Admin Dashboard
+   ========================================================== */
+
+.dash-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.dash-title {
+  margin: 0;
+  font-size: 24px;
+}
+
+.dash-subtitle {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.dash-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.dash-updated {
+  font-size: 12px;
+  color: #8890a0;
+}
+
+.dash-alert {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: #fdecea;
+  border: 1px solid #f3c1bb;
+  color: #a4271f;
+  font-size: 13px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+}
+
+/* ---- KPI cards ---- */
+
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px;
+  margin-bottom: 24px;
+}
+
+.kpi-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 16px 18px;
+  box-shadow: 0 4px 14px rgba(20, 30, 60, 0.06);
+  min-height: 88px;
+}
+
+.kpi-card.skeleton {
+  background: linear-gradient(90deg, #eef0f6 25%, #f6f7fb 37%, #eef0f6 63%);
+  background-size: 400% 100%;
+  animation: shimmer 1.4s ease infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: 100% 0; }
+  100% { background-position: 0 0; }
+}
+
+.kpi-label {
+  font-size: 12px;
+  color: #6b7280;
+  margin: 0 0 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.kpi-value {
+  font-size: 26px;
+  font-weight: 700;
+  color: #1f2430;
+  line-height: 1;
+}
+
+.kpi-value .kpi-unit {
+  font-size: 14px;
+  font-weight: 500;
+  color: #8890a0;
+  margin-left: 4px;
+}
+
+.kpi-sub {
+  font-size: 12px;
+  color: #8890a0;
+  margin-top: 6px;
+}
+
+.kpi-card.kpi-warn .kpi-value { color: #b3541e; }
+.kpi-card.kpi-danger .kpi-value { color: #a4271f; }
+.kpi-card.kpi-good .kpi-value { color: #1c7c4c; }
+
+/* ---- Panels ---- */
+
+.dash-panels {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.panel {
+  background: #fff;
+  border-radius: 12px;
+  padding: 18px 20px;
+  box-shadow: 0 4px 14px rgba(20, 30, 60, 0.06);
+  margin-bottom: 20px;
+}
+
+.panel-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.panel-title {
+  margin: 0 0 14px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #33384a;
+}
+
+.panel-count {
+  font-size: 12px;
+  color: #8890a0;
+}
+
+/* ---- Simple CSS/JS bar charts ---- */
+
+.bar-chart {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.bar-row {
+  display: grid;
+  grid-template-columns: 90px 1fr 40px;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+}
+
+.bar-row-label {
+  color: #4b5163;
+  text-transform: capitalize;
+}
+
+.bar-track {
+  background: #eef0f6;
+  border-radius: 6px;
+  height: 12px;
+  overflow: hidden;
+}
+
+.bar-fill {
+  height: 100%;
+  border-radius: 6px;
+  background: #2f5bea;
+  transition: width 0.3s ease;
+}
+
+.bar-row-value {
+  text-align: right;
+  color: #33384a;
+  font-weight: 600;
+}
+
+.bar-chart-vertical {
+  flex-direction: row;
+  align-items: flex-end;
+  gap: 10px;
+  height: 140px;
+  padding-top: 10px;
+}
+
+.bar-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  height: 100%;
+  gap: 6px;
+}
+
+.bar-col-value {
+  font-size: 11px;
+  color: #33384a;
+  font-weight: 600;
+}
+
+.bar-col-fill {
+  width: 100%;
+  max-width: 22px;
+  border-radius: 4px 4px 0 0;
+  background: #2f5bea;
+  min-height: 2px;
+  transition: height 0.3s ease;
+}
+
+.bar-col-label {
+  font-size: 10px;
+  color: #8890a0;
+}
+
+.chart-empty {
+  font-size: 13px;
+  color: #8890a0;
+  text-align: center;
+  padding: 20px 0;
+}
+
+/* ---- Tables ---- */
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.data-table th {
+  text-align: left;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #8890a0;
+  padding: 8px 10px;
+  border-bottom: 1px solid #e5e8f0;
+  white-space: nowrap;
+}
+
+.data-table td {
+  padding: 10px;
+  border-bottom: 1px solid #f0f1f6;
+  white-space: nowrap;
+}
+
+.data-table tbody tr:hover {
+  background: #f8f9fc;
+}
+
+.empty-state {
+  text-align: center;
+  color: #8890a0;
+  font-size: 13px;
+  padding: 20px 0;
+}
+
+/* Status / priority badges */
+
+.badge {
+  display: inline-block;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: capitalize;
+  white-space: nowrap;
+}
+
+.badge-scheduled, .badge-waiting        { background: #eef0f6; color: #4b5163; }
+.badge-checked_in, .badge-arriving,
+.badge-next                             { background: #e6ecff; color: #2f5bea; }
+.badge-in_progress, .badge-consulting   { background: #fff3d6; color: #b3541e; }
+.badge-completed                        { background: #e3f6ea; color: #1c7c4c; }
+.badge-cancelled                        { background: #f0f1f6; color: #8890a0; }
+.badge-no_show                          { background: #fdecea; color: #a4271f; }
+
+.badge-priority-emergency               { background: #fdecea; color: #a4271f; }
+.badge-priority-normal                  { background: #eef0f6; color: #4b5163; }
+
+@media (max-width: 800px) {
+  .dash-panels {
+    grid-template-columns: 1fr;
+  }
+}
