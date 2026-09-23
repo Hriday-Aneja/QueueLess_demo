@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QueueLess — Consultation</title>
+    <link rel="stylesheet" href="../shared/css/base.css">
+    <link rel="stylesheet" href="css/doctor.css">
+</head>
+
+<body data-page="consultation">
+
+    <div class="app-shell">
+        <header class="app-header" id="appShellHeader"></header>
+
+        <div class="app-body">
+            <nav class="app-sidenav" id="appShellNav"></nav>
+
+            <main class="app-main">
+
+                <a href="dashboard.html" class="back-link">&larr; Back to Dashboard</a>
+
+                <div class="page-header">
+                    <div>
+                        <h1 class="page-title">Consultation</h1>
+                        <p class="page-subtitle" id="consultationSubtitle">Loading patient\u2026</p>
+                    </div>
+                </div>
+
+                <!-- Shown only if the token_id is missing or not found -->
+                <section class="card hidden" id="notFoundState">
+                    <div class="empty-state">
+                        <div class="empty-state-icon">&#128269;</div>
+                        <p class="empty-state-title">Patient not found</p>
+                        <p class="empty-state-text">This token isn\u2019t in today\u2019s queue. It may have already
+                            been cleared.</p>
+                    </div>
+                </section>
+
+                <div class="consultation-layout hidden" id="consultationLayout">
+
+                    <div class="consultation-main">
+
+                        <section class="card">
+                            <div class="card-title-row">
+                                <h2 class="card-title">Patient</h2>
+                                <span id="consultationStatusBadge"></span>
+                            </div>
+                            <div class="patient-info-header">
+                                <span class="patient-info-avatar" id="patientAvatar"></span>
+                                <div>
+                                    <p class="patient-name mb-0" id="patientName"></p>
+                                    <p class="patient-meta mb-0" id="patientMetaLine"></p>
+                                </div>
+                            </div>
+                            <div class="patient-info-grid">
+                                <div>
+                                    <div class="patient-info-item-label">Token</div>
+                                    <div class="patient-info-item-value" id="patientToken"></div>
+                                </div>
+                                <div>
+                                    <div class="patient-info-item-label">Appointment Time</div>
+                                    <div class="patient-info-item-value" id="patientTime"></div>
+                                </div>
+                                <div>
+                                    <div class="patient-info-item-label">Type</div>
+                                    <div class="patient-info-item-value" id="patientType"></div>
+                                </div>
+                                <div>
+                                    <div class="patient-info-item-label">Priority</div>
+                                    <div class="patient-info-item-value" id="patientPriority"></div>
+                                </div>
+                                <div style="grid-column: 1 / -1;">
+                                    <div class="patient-info-item-label">Reason for Visit</div>
+                                    <div class="patient-info-item-value" id="patientReason"></div>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section class="card">
+                            <div class="card-title-row">
+                                <h2 class="card-title">Consultation Notes</h2>
+                            </div>
+                            <form id="consultationForm" class="auth-form">
+                                <div class="form-field">
+                                    <label for="notesDiagnosis">Diagnosis</label>
+                                    <textarea class="form-textarea" id="notesDiagnosis"
+                                        placeholder="Clinical observations and diagnosis\u2026"></textarea>
+                                </div>
+                                <div class="form-field">
+                                    <label for="notesPrescription">Prescription</label>
+                                    <textarea class="form-textarea" id="notesPrescription"
+                                        placeholder="Medication, dosage, instructions\u2026"></textarea>
+                                </div>
+                                <div class="form-field">
+                                    <label for="notesFollowUp">Follow-up Notes</label>
+                                    <textarea class="form-textarea" id="notesFollowUp"
+                                        placeholder="Next steps, follow-up date, advice\u2026"></textarea>
+                                </div>
+                                <p class="text-faint" style="font-size:12.5px;">Notes are kept for this demo session
+                                    only \u2014 there\u2019s no backend to save them to yet.</p>
+                                <div class="form-actions">
+                                    <button type="button" class="btn btn-secondary" id="markNoShowBtn">Mark
+                                        No-show</button>
+                                    <button type="submit" class="btn btn-primary" id="completeConsultBtn">Complete
+                                        Consultation</button>
+                                </div>
+                            </form>
+                        </section>
+
+                    </div>
+
+                    <div class="consultation-sidebar">
+                        <section class="card">
+                            <div class="card-title-row">
+                                <h2 class="card-title">Patient History</h2>
+                            </div>
+                            <div class="history-list" id="historyList"></div>
+                            <div class="empty-state hidden" id="historyEmptyState">
+                                <p class="empty-state-text">No previous visits on record.</p>
+                            </div>
+                        </section>
+                    </div>
+
+                </div>
+
+            </main>
+        </div>
+    </div>
+
+    <script src="js/doctor-data.js"></script>
+    <script src="js/doctor.js"></script>
+    <script>
+        (function () {
+            'use strict';
+
+            document.addEventListener('DOMContentLoaded', function () {
+                if (!window.MockAuth || !MockAuth.isLoggedIn()) return; // guard() already redirects
+
+                var tokenId = DoctorUI.getQueryParam('token_id');
+                var token = tokenId ? DoctorMockData.getTokenById(tokenId) : null;
+
+                if (!token) {
+                    document.getElementById('consultationSubtitle').textContent = 'Patient not found';
+                    document.getElementById('notFoundState').classList.remove('hidden');
+                    return;
+                }
+
+                document.getElementById('consultationLayout').classList.remove('hidden');
+                renderPatient(token);
+                renderHistory(token.patient_id);
+                wireActions(token);
+            });
+
+            function renderPatient(token) {
+                document.getElementById('consultationSubtitle').textContent = 'Token #' + token.token_number + ' \u00b7 ' + DoctorUI.escapeHtml(token.patient_name);
+                document.getElementById('consultationStatusBadge').innerHTML = DoctorUI.statusBadgeHtml(token.status);
+
+                document.getElementById('patientAvatar').textContent = DoctorUI.initials(token.patient_name);
+                document.getElementById('patientName').textContent = token.patient_name;
+                document.getElementById('patientMetaLine').textContent = token.patient_age + ' yrs \u00b7 ' + token.patient_gender;
+
+                document.getElementById('patientToken').textContent = '#' + token.token_number;
+                document.getElementById('patientTime').textContent = DoctorUI.formatTime(token.appointment_time);
+                document.getElementById('patientType').textContent = token.token_type === 'walkin' ? 'Walk-in' : 'Appointment';
+                document.getElementById('patientPriority').innerHTML = DoctorUI.priorityBadgeHtml(token.priority);
+                document.getElementById('patientReason').textContent = token.reason;
+            }
+
+            function renderHistory(patientId) {
+                var history = DoctorMockData.getPatientHistory(patientId);
+                var list = document.getElementById('historyList');
+                var emptyState = document.getElementById('historyEmptyState');
+
+                if (!history.length) {
+                    list.innerHTML = '';
+                    emptyState.classList.remove('hidden');
+                    return;
+                }
+                emptyState.classList.add('hidden');
+
+                list.innerHTML = history
+                    .slice()
+                    .sort(function (a, b) { return a.date < b.date ? 1 : -1; })
+                    .map(function (entry) {
+                        return ''
+                            + '<div class="history-item">'
+                            + '<div class="history-date">' + DoctorUI.formatDate(entry.date) + '</div>'
+                            + '<div class="history-note">' + DoctorUI.escapeHtml(entry.note) + '</div>'
+                            + '</div>';
+                    }).join('');
+            }
+
+            function wireActions(token) {
+                var form = document.getElementById('consultationForm');
+                form.addEventListener('submit', function (e) {
+                    e.preventDefault();
+                    DoctorMockData.setTokenStatus(token.token_id, 'completed');
+                    window.location.href = 'dashboard.html';
+                });
+
+                document.getElementById('markNoShowBtn').addEventListener('click', function () {
+                    DoctorMockData.setTokenStatus(token.token_id, 'no_show');
+                    window.location.href = 'dashboard.html';
+                });
+            }
+        })();
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QueueLess — Appointments</title>
+    <link rel="stylesheet" href="../shared/css/base.css">
+    <link rel="stylesheet" href="css/doctor.css">
+</head>
+
+<body data-page="appointments">
+
+    <div class="app-shell">
+        <header class="app-header" id="appShellHeader"></header>
+
+        <div class="app-body">
+            <nav class="app-sidenav" id="appShellNav"></nav>
+
+            <main class="app-main">
+
+                <div class="page-header">
+                    <div>
+                        <h1 class="page-title">Appointments</h1>
+                        <p class="page-subtitle">All scheduled visits, today and beyond</p>
+                    </div>
+                    <div class="filter-tabs" id="filterTabs">
+                        <button type="button" class="filter-tab is-active" data-filter="upcoming">Upcoming</button>
+                        <button type="button" class="filter-tab" data-filter="today">Today</button>
+                        <button type="button" class="filter-tab" data-filter="past">Past</button>
+                        <button type="button" class="filter-tab" data-filter="all">All</button>
+                    </div>
+                </div>
+
+                <section class="card">
+                    <div class="card-title-row">
+                        <h2 class="card-title">Appointments</h2>
+                        <span class="text-muted" id="appointmentsCountLabel"></span>
+                    </div>
+
+                    <div class="queue-table-wrap" id="appointmentsListWrap"></div>
+
+                    <div class="empty-state hidden" id="appointmentsEmptyState">
+                        <div class="empty-state-icon">&#128197;</div>
+                        <p class="empty-state-title">No appointments here</p>
+                        <p class="empty-state-text">Try a different filter above.</p>
+                    </div>
+                </section>
+
+            </main>
+        </div>
+    </div>
+
+    <script src="js/doctor-data.js"></script>
+    <script src="js/doctor.js"></script>
+    <script>
+        (function () {
+            'use strict';
+
+            var currentFilter = 'upcoming';
+
+            document.addEventListener('DOMContentLoaded', function () {
+                if (!window.MockAuth || !MockAuth.isLoggedIn()) return; // guard() already redirects
+
+                wireFilterTabs();
+                renderAppointments();
+            });
+
+            function wireFilterTabs() {
+                var tabs = document.querySelectorAll('#filterTabs .filter-tab');
+                tabs.forEach(function (tab) {
+                    tab.addEventListener('click', function () {
+                        tabs.forEach(function (t) { t.classList.remove('is-active'); });
+                        tab.classList.add('is-active');
+                        currentFilter = tab.getAttribute('data-filter');
+                        renderAppointments();
+                    });
+                });
+            }
+
+            function todayIso() {
+                return new Date().toISOString().slice(0, 10);
+            }
+
+            function filterAppointments(all) {
+                var today = todayIso();
+                if (currentFilter === 'today') {
+                    return all.filter(function (a) { return a.appointment_date === today; });
+                }
+                if (currentFilter === 'upcoming') {
+                    return all.filter(function (a) { return a.appointment_date >= today; });
+                }
+                if (currentFilter === 'past') {
+                    return all.filter(function (a) { return a.appointment_date < today; });
+                }
+                return all;
+            }
+
+            function renderAppointments() {
+                var all = DoctorMockData.getAppointments();
+                var filtered = filterAppointments(all).sort(function (a, b) {
+                    var da = a.appointment_date + ' ' + a.appointment_time;
+                    var db = b.appointment_date + ' ' + b.appointment_time;
+                    return currentFilter === 'past' ? (da < db ? 1 : -1) : (da > db ? 1 : -1);
+                });
+
+                var wrap = document.getElementById('appointmentsListWrap');
+                var emptyState = document.getElementById('appointmentsEmptyState');
+                var countLabel = document.getElementById('appointmentsCountLabel');
+
+                countLabel.textContent = filtered.length + (filtered.length === 1 ? ' appointment' : ' appointments');
+
+                if (!filtered.length) {
+                    wrap.innerHTML = '';
+                    emptyState.classList.remove('hidden');
+                    return;
+                }
+                emptyState.classList.add('hidden');
+
+                var groups = groupByDate(filtered);
+                wrap.innerHTML = groups.map(renderDateGroup).join('');
+            }
+
+            function groupByDate(list) {
+                var order = [];
+                var map = {};
+                list.forEach(function (a) {
+                    if (!map[a.appointment_date]) {
+                        map[a.appointment_date] = [];
+                        order.push(a.appointment_date);
+                    }
+                    map[a.appointment_date].push(a);
+                });
+                return order.map(function (date) { return { date: date, items: map[date] }; });
+            }
+
+            function renderDateGroup(group) {
+                var today = todayIso();
+                var label = group.date === today ? 'Today \u00b7 ' + DoctorUI.formatDate(group.date) : DoctorUI.formatDate(group.date);
+
+                return ''
+                    + '<div class="date-group-label">' + label + '</div>'
+                    + '<table class="appointments-table">'
+                    + '<thead><tr><th>Time</th><th>Patient</th><th>Type</th><th>Reason</th><th>Status</th></tr></thead>'
+                    + '<tbody>'
+                    + group.items.map(function (a) {
+                        return ''
+                            + '<tr>'
+                            + '<td>' + DoctorUI.formatTime(a.appointment_time) + '</td>'
+                            + '<td>' + DoctorUI.escapeHtml(a.patient_name) + '</td>'
+                            + '<td class="text-muted">' + (a.appointment_type === 'walkin' ? 'Walk-in' : 'Appointment') + '</td>'
+                            + '<td class="text-muted">' + DoctorUI.escapeHtml(a.reason) + '</td>'
+                            + '<td>' + DoctorUI.statusBadgeHtml(a.status) + '</td>'
+                            + '</tr>';
+                    }).join('')
+                    + '</tbody>'
+                    + '</table>';
+            }
+        })();
+    </script>
+</body>
+
+</html>

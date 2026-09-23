@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QueueLess — Doctor Login</title>
+    <link rel="stylesheet" href="../shared/css/base.css">
+    <link rel="stylesheet" href="css/doctor.css">
+</head>
+
+<body class="doctor-auth-body">
+
+    <main class="auth-wrapper">
+        <section class="auth-card" role="main" aria-labelledby="loginTitle">
+
+            <div class="auth-brand">
+                <span class="auth-brand-mark" aria-hidden="true">Q+</span>
+                <h1 class="auth-brand-name">QueueLess</h1>
+            </div>
+
+            <h2 id="loginTitle" class="auth-title">Doctor Portal</h2>
+            <p class="auth-subtitle">Sign in to view your queue and consultations.</p>
+
+            <form id="doctorLoginForm" class="auth-form" novalidate>
+
+                <div class="form-field">
+                    <label for="doctorEmail">Email</label>
+                    <input type="email" id="doctorEmail" name="email" placeholder="doctor@queueless.com"
+                        autocomplete="username" required>
+                    <span class="field-error" id="emailError"></span>
+                </div>
+
+                <div class="form-field">
+                    <label for="doctorPassword">Password</label>
+                    <input type="password" id="doctorPassword" name="password" placeholder="Enter your password"
+                        autocomplete="current-password" required>
+                    <span class="field-error" id="passwordError"></span>
+                </div>
+
+                <div class="form-row form-row-between">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="rememberMe">
+                        <span>Remember me</span>
+                    </label>
+                    <a href="#" class="auth-link-muted" id="forgotPasswordLink">Forgot password?</a>
+                </div>
+
+                <div class="form-alert" id="loginAlert" role="alert" hidden></div>
+
+                <button type="submit" class="btn btn-primary btn-block" id="loginSubmitBtn">
+                    Sign In
+                </button>
+            </form>
+
+            <div class="auth-demo-hint">
+                <p><strong>Demo credentials</strong> (mock data — no backend):</p>
+                <p>Email: <code>doctor@queueless.com</code> &nbsp;·&nbsp; Password: <code>doctor123</code></p>
+            </div>
+
+        </section>
+
+        <p class="auth-footnote">QueueLess Doctor Module · Frontend demo build · Mock data only</p>
+    </main>
+
+    <script src="js/doctor-data.js"></script>
+    <script src="js/doctor.js"></script>
+</body>
+
+</html>

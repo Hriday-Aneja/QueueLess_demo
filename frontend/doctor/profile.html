@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QueueLess — My Profile</title>
+    <link rel="stylesheet" href="../shared/css/base.css">
+    <link rel="stylesheet" href="css/doctor.css">
+</head>
+
+<body data-page="profile">
+
+    <div class="app-shell">
+        <header class="app-header" id="appShellHeader"></header>
+
+        <div class="app-body">
+            <nav class="app-sidenav" id="appShellNav"></nav>
+
+            <main class="app-main">
+
+                <div class="page-header">
+                    <div>
+                        <h1 class="page-title">My Profile</h1>
+                        <p class="page-subtitle">Your details as patients and staff see them</p>
+                    </div>
+                </div>
+
+                <section class="card">
+                    <div class="profile-header">
+                        <span class="profile-avatar-lg" id="profileAvatar"></span>
+                        <div>
+                            <p class="profile-header-name" id="profileName"></p>
+                            <p class="profile-header-meta" id="profileMeta"></p>
+                        </div>
+                    </div>
+
+                    <div class="form-alert hidden" id="profileAlert" role="alert" hidden></div>
+
+                    <form id="profileForm" class="auth-form">
+                        <div class="profile-grid">
+                            <div class="form-field">
+                                <label for="profileFullName">Full Name</label>
+                                <input type="text" id="profileFullName">
+                            </div>
+                            <div class="form-field">
+                                <label for="profileEmail">Email</label>
+                                <input type="email" id="profileEmail" disabled>
+                            </div>
+                            <div class="form-field">
+                                <label for="profilePhone">Phone</label>
+                                <input type="text" id="profilePhone">
+                            </div>
+                            <div class="form-field">
+                                <label for="profileSpecialization">Specialization</label>
+                                <input type="text" id="profileSpecialization">
+                            </div>
+                            <div class="form-field">
+                                <label for="profileDepartment">Department</label>
+                                <input type="text" id="profileDepartment">
+                            </div>
+                            <div class="form-field">
+                                <label for="profileClinic">Clinic</label>
+                                <input type="text" id="profileClinic">
+                            </div>
+                            <div class="form-field">
+                                <label for="profileFee">Consultation Fee (&#8377;)</label>
+                                <input type="number" id="profileFee" min="0" step="1">
+                            </div>
+                            <div class="form-field">
+                                <label for="profileExperience">Years of Experience</label>
+                                <input type="number" id="profileExperience" min="0" step="1">
+                            </div>
+                            <div class="form-field span-2">
+                                <label for="profileQualifications">Qualifications</label>
+                                <input type="text" id="profileQualifications">
+                            </div>
+                            <div class="form-field span-2">
+                                <label for="profileBio">Bio</label>
+                                <textarea class="form-textarea" id="profileBio"></textarea>
+                            </div>
+                        </div>
+
+                        <div class="profile-edit-actions">
+                            <button type="button" class="btn btn-secondary" id="resetProfileBtn">Reset</button>
+                            <button type="submit" class="btn btn-primary">Save Changes</button>
+                        </div>
+                    </form>
+                </section>
+
+            </main>
+        </div>
+    </div>
+
+    <script src="js/doctor-data.js"></script>
+    <script src="js/doctor.js"></script>
+    <script>
+        (function () {
+            'use strict';
+
+            document.addEventListener('DOMContentLoaded', function () {
+                if (!window.MockAuth || !MockAuth.isLoggedIn()) return; // guard() already redirects
+
+                fillForm(DoctorMockData.getProfile());
+
+                document.getElementById('profileForm').addEventListener('submit', function (e) {
+                    e.preventDefault();
+                    // Mock only — no backend to persist to. Confirms the save
+                    // in-page so the flow feels complete for this demo build.
+                    DoctorUI.showAlert('profileAlert', 'Profile changes saved for this session.', true);
+                });
+
+                document.getElementById('resetProfileBtn').addEventListener('click', function () {
+                    DoctorUI.hideAlert('profileAlert');
+                    fillForm(DoctorMockData.getProfile());
+                });
+            });
+
+            function fillForm(profile) {
+                document.getElementById('profileAvatar').textContent = profile.avatar_initials || DoctorUI.initials(profile.full_name);
+                document.getElementById('profileName').textContent = profile.full_name;
+                document.getElementById('profileMeta').textContent = profile.doctor_code + ' \u00b7 ' + profile.specialization;
+
+                document.getElementById('profileFullName').value = profile.full_name || '';
+                document.getElementById('profileEmail').value = profile.email || '';
+                document.getElementById('profilePhone').value = profile.phone || '';
+                document.getElementById('profileSpecialization').value = profile.specialization || '';
+                document.getElementById('profileDepartment').value = profile.department_name || '';
+                document.getElementById('profileClinic').value = profile.clinic_name || '';
+                document.getElementById('profileFee').value = profile.consultation_fee || 0;
+                document.getElementById('profileExperience').value = profile.years_experience || 0;
+                document.getElementById('profileQualifications').value = profile.qualifications || '';
+                document.getElementById('profileBio').value = profile.bio || '';
+            }
+        })();
+    </script>
+</body>
+
+</html>

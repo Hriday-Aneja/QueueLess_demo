@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QueueLess — Doctor Dashboard</title>
+    <link rel="stylesheet" href="../shared/css/base.css">
+    <link rel="stylesheet" href="css/doctor.css">
+</head>
+
+<body data-page="dashboard">
+
+    <div class="app-shell">
+        <header class="app-header" id="appShellHeader"></header>
+
+        <div class="app-body">
+            <nav class="app-sidenav" id="appShellNav"></nav>
+
+            <main class="app-main">
+
+                <div class="page-header">
+                    <div>
+                        <h1 class="page-title">Dashboard</h1>
+                        <p class="page-subtitle" id="dashboardDateLabel">Today's overview</p>
+                    </div>
+                    <div class="dashboard-stats" id="dashboardStats"></div>
+                </div>
+
+                <!-- Current & Next Patient cards -->
+                <section class="patient-cards-row" id="patientCardsRow" aria-label="Current and next patient">
+                    <!-- filled by script -->
+                </section>
+
+                <!-- Today's Queue -->
+                <section class="card queue-card">
+                    <div class="card-title-row">
+                        <h2 class="card-title">Today's Queue</h2>
+                        <span class="text-muted" id="queueCountLabel"></span>
+                    </div>
+
+                    <div class="queue-table-wrap">
+                        <table class="queue-table" id="queueTable">
+                            <thead>
+                                <tr>
+                                    <th>Token</th>
+                                    <th>Patient</th>
+                                    <th>Time</th>
+                                    <th>Type</th>
+                                    <th>Reason</th>
+                                    <th>Status</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody id="queueTableBody"></tbody>
+                        </table>
+                        <div class="empty-state hidden" id="queueEmptyState">
+                            <div class="empty-state-icon">&#128203;</div>
+                            <p class="empty-state-title">No patients in the queue</p>
+                            <p class="empty-state-text">Your queue for today is currently empty.</p>
+                        </div>
+                    </div>
+                </section>
+
+            </main>
+        </div>
+    </div>
+
+    <script src="js/doctor-data.js"></script>
+    <script src="js/doctor.js"></script>
+    <script>
+        (function () {
+            'use strict';
+
+            document.addEventListener('DOMContentLoaded', function () {
+                if (!window.MockAuth || !MockAuth.isLoggedIn()) return; // guard() already redirects
+
+                renderDateLabel();
+                renderStats();
+                renderPatientCards();
+                renderQueueTable();
+            });
+
+            function renderDateLabel() {
+                var el = document.getElementById('dashboardDateLabel');
+                var todayIso = new Date().toISOString().slice(0, 10);
+                el.textContent = DoctorUI.formatDate(todayIso) + ' · Today\u2019s overview';
+            }
+
+            function renderStats() {
+                var waiting = DoctorMockData.getWaitingCount();
+                var completed = DoctorMockData.getCompletedCount();
+                var total = DoctorMockData.getTodayQueue().length;
+
+                document.getElementById('dashboardStats').innerHTML = [
+                    statPill(total, 'Total'),
+                    statPill(waiting, 'Waiting'),
+                    statPill(completed, 'Completed')
+                ].join('');
+            }
+
+            function statPill(value, label) {
+                return '<div class="stat-pill"><span class="stat-value">' + value + '</span><span class="stat-label">' + label + '</span></div>';
+            }
+
+            function renderPatientCards() {
+                var current = DoctorMockData.getCurrentPatient();
+                var next = DoctorMockData.getNextPatient();
+                var row = document.getElementById('patientCardsRow');
+
+                row.innerHTML = patientCardHtml('Current Patient', current, 'current')
+                    + patientCardHtml('Next Patient', next, 'next');
+
+                var startBtn = document.getElementById('startConsultBtn');
+                if (startBtn) {
+                    startBtn.addEventListener('click', function () {
+                        window.location.href = 'consultation.html?token_id=' + startBtn.getAttribute('data-token-id');
+                    });
+                }
+
+                var callNextBtn = document.getElementById('callNextBtn');
+                if (callNextBtn) {
+                    callNextBtn.addEventListener('click', function () {
+                        var tokenId = callNextBtn.getAttribute('data-token-id');
+                        // Local-only mock transition: waiting -> in_progress.
+                        DoctorMockData.setTokenStatus(tokenId, 'in_progress');
+                        renderStats();
+                        renderPatientCards();
+                        renderQueueTable();
+                    });
+                }
+            }
+
+            function patientCardHtml(title, token, variant) {
+                if (!token) {
+                    return ''
+                        + '<div class="card patient-card patient-card-' + variant + '">'
+                        + '<div class="card-title-row"><h3 class="card-title">' + title + '</h3></div>'
+                        + '<div class="empty-state">'
+                        + '<div class="empty-state-icon">&#128100;</div>'
+                        + '<p class="empty-state-text">' + (variant === 'current' ? 'No patient currently in consultation.' : 'No patient waiting next.') + '</p>'
+                        + '</div>'
+                        + '</div>';
+                }
+
+                var actionHtml = variant === 'current'
+                    ? '<button class="btn btn-primary btn-sm" id="startConsultBtn" data-token-id="' + token.token_id + '">Open Consultation</button>'
+                    : '<button class="btn btn-outline btn-sm" id="callNextBtn" data-token-id="' + token.token_id + '">Call Patient</button>';
+
+                return ''
+                    + '<div class="card patient-card patient-card-' + variant + '">'
+                    + '<div class="card-title-row">'
+                    + '<h3 class="card-title">' + title + '</h3>'
+                    + DoctorUI.statusBadgeHtml(token.status)
+                    + '</div>'
+                    + '<div class="patient-card-body">'
+                    + '<span class="patient-token-no">#' + token.token_number + '</span>'
+                    + '<div>'
+                    + '<p class="patient-name">' + DoctorUI.escapeHtml(token.patient_name) + '</p>'
+                    + '<p class="patient-meta">' + token.patient_age + ' yrs \u00b7 ' + DoctorUI.escapeHtml(token.patient_gender) + ' \u00b7 ' + token.appointment_time + '</p>'
+                    + '<p class="patient-reason">' + DoctorUI.escapeHtml(token.reason) + '</p>'
+                    + '</div>'
+                    + '</div>'
+                    + '<div class="patient-card-actions">' + actionHtml + '</div>'
+                    + '</div>';
+            }
+
+            function renderQueueTable() {
+                var queue = DoctorMockData.getTodayQueue().sort(function (a, b) { return a.token_number - b.token_number; });
+                var tbody = document.getElementById('queueTableBody');
+                var emptyState = document.getElementById('queueEmptyState');
+                var countLabel = document.getElementById('queueCountLabel');
+
+                countLabel.textContent = queue.length + (queue.length === 1 ? ' patient' : ' patients');
+
+                if (!queue.length) {
+                    tbody.innerHTML = '';
+                    emptyState.classList.remove('hidden');
+                    return;
+                }
+                emptyState.classList.add('hidden');
+
+                tbody.innerHTML = queue.map(function (t) {
+                    return ''
+                        + '<tr>'
+                        + '<td>#' + t.token_number + '</td>'
+                        + '<td>' + DoctorUI.escapeHtml(t.patient_name) + '</td>'
+                        + '<td>' + t.appointment_time + '</td>'
+                        + '<td class="text-muted">' + (t.token_type === 'walkin' ? 'Walk-in' : 'Appointment') + '</td>'
+                        + '<td class="text-muted">' + DoctorUI.escapeHtml(t.reason) + '</td>'
+                        + '<td>' + DoctorUI.statusBadgeHtml(t.status) + '</td>'
+                        + '<td><a href="consultation.html?token_id=' + t.token_id + '" class="table-link">View</a></td>'
+                        + '</tr>';
+                }).join('');
+            }
+        })();
+    </script>
+</body>
+
+</html>

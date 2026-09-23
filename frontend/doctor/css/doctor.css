@@ -1,0 +1,1121 @@
+/* ==========================================================================
+   QueueLess — Doctor Module Stylesheet
+   frontend/doctor/css/doctor.css
+   White healthcare theme. Loaded by every page in frontend/doctor/.
+   ========================================================================== */
+
+:root {
+    /* -- Brand / theme colors ------------------------------------------- */
+    --dr-primary: #0f766e;
+    /* teal — primary action color */
+    --dr-primary-dark: #0b5c56;
+    --dr-primary-light: #e6f5f3;
+    --dr-accent: #2563eb;
+    /* blue — links / secondary accents */
+    --dr-accent-light: #eaf1fd;
+
+    --dr-success: #16a34a;
+    --dr-success-light: #eafaf0;
+    --dr-warning: #d97706;
+    --dr-warning-light: #fef6e7;
+    --dr-danger: #dc2626;
+    --dr-danger-light: #fdecec;
+
+    /* -- Surfaces --------------------------------------------------------- */
+    --dr-bg: #f5f7f8;
+    /* app background, very light grey-white */
+    --dr-surface: #ffffff;
+    /* cards */
+    --dr-border: #e3e8ea;
+    --dr-border-strong: #cfd7da;
+
+    /* -- Text --------------------------------------------------------------- */
+    --dr-text: #1c2b2a;
+    --dr-text-muted: #5f7370;
+    --dr-text-faint: #8b9c99;
+
+    /* -- Spacing / shape ------------------------------------------------ */
+    --dr-radius-sm: 8px;
+    --dr-radius-md: 14px;
+    --dr-radius-lg: 20px;
+    --dr-shadow-sm: 0 1px 2px rgba(16, 42, 40, 0.06);
+    --dr-shadow-md: 0 4px 16px rgba(16, 42, 40, 0.08);
+    --dr-shadow-lg: 0 12px 32px rgba(16, 42, 40, 0.12);
+
+    --dr-header-height: 64px;
+    --dr-nav-width: 232px;
+}
+
+/* ==========================================================================
+   Reset / base
+   ========================================================================== */
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
+    background: var(--dr-bg);
+    color: var(--dr-text);
+    -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+h4,
+p {
+    margin: 0;
+}
+
+a {
+    color: var(--dr-accent);
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+button,
+input,
+select,
+textarea {
+    font-family: inherit;
+    font-size: inherit;
+}
+
+img {
+    max-width: 100%;
+    display: block;
+}
+
+/* ==========================================================================
+   Buttons
+   ========================================================================== */
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 11px 20px;
+    border-radius: var(--dr-radius-sm);
+    border: 1px solid transparent;
+    font-size: 14.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease, transform 0.05s ease;
+    white-space: nowrap;
+}
+
+.btn:active {
+    transform: translateY(1px);
+}
+
+.btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.btn-primary {
+    background: var(--dr-primary);
+    color: #fff;
+}
+
+.btn-primary:hover:not(:disabled) {
+    background: var(--dr-primary-dark);
+}
+
+.btn-secondary {
+    background: var(--dr-surface);
+    color: var(--dr-text);
+    border-color: var(--dr-border-strong);
+}
+
+.btn-secondary:hover:not(:disabled) {
+    background: #f0f3f3;
+}
+
+.btn-danger {
+    background: var(--dr-danger);
+    color: #fff;
+}
+
+.btn-danger:hover:not(:disabled) {
+    background: #b91c1c;
+}
+
+.btn-outline {
+    background: transparent;
+    color: var(--dr-primary);
+    border-color: var(--dr-primary);
+}
+
+.btn-outline:hover:not(:disabled) {
+    background: var(--dr-primary-light);
+}
+
+.btn-sm {
+    padding: 7px 14px;
+    font-size: 13px;
+}
+
+.btn-block {
+    width: 100%;
+}
+
+/* ==========================================================================
+   Login / Auth screen (index.html)
+   ========================================================================== */
+
+.doctor-auth-body {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(180deg, #ffffff 0%, var(--dr-bg) 100%);
+    padding: 24px;
+}
+
+.auth-wrapper {
+    width: 100%;
+    max-width: 420px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+}
+
+.auth-card {
+    width: 100%;
+    background: var(--dr-surface);
+    border: 1px solid var(--dr-border);
+    border-radius: var(--dr-radius-lg);
+    box-shadow: var(--dr-shadow-lg);
+    padding: 36px 32px 28px;
+}
+
+.auth-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.auth-brand-mark {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: var(--dr-primary);
+    color: #fff;
+    font-weight: 700;
+    font-size: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.auth-brand-name {
+    font-size: 19px;
+    font-weight: 700;
+    color: var(--dr-text);
+}
+
+.auth-title {
+    font-size: 22px;
+    font-weight: 700;
+    margin-bottom: 6px;
+}
+
+.auth-subtitle {
+    font-size: 14px;
+    color: var(--dr-text-muted);
+    margin-bottom: 24px;
+}
+
+.auth-form {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.form-field label {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--dr-text);
+}
+
+.form-field input,
+.form-field select,
+.form-field textarea {
+    padding: 11px 13px;
+    border: 1px solid var(--dr-border-strong);
+    border-radius: var(--dr-radius-sm);
+    background: var(--dr-surface);
+    color: var(--dr-text);
+    outline: none;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.form-field input:focus,
+.form-field select:focus,
+.form-field textarea:focus {
+    border-color: var(--dr-primary);
+    box-shadow: 0 0 0 3px var(--dr-primary-light);
+}
+
+.form-field.has-error input {
+    border-color: var(--dr-danger);
+}
+
+.field-error {
+    font-size: 12.5px;
+    color: var(--dr-danger);
+    min-height: 15px;
+}
+
+.form-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.form-row-between {
+    justify-content: space-between;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 13.5px;
+    color: var(--dr-text-muted);
+    cursor: pointer;
+}
+
+.checkbox-label input {
+    accent-color: var(--dr-primary);
+}
+
+.auth-link-muted {
+    font-size: 13px;
+    color: var(--dr-text-muted);
+}
+
+.form-alert {
+    padding: 10px 12px;
+    border-radius: var(--dr-radius-sm);
+    font-size: 13.5px;
+    background: var(--dr-danger-light);
+    color: var(--dr-danger);
+    border: 1px solid rgba(220, 38, 38, 0.2);
+}
+
+.form-alert.is-success {
+    background: var(--dr-success-light);
+    color: var(--dr-success);
+    border-color: rgba(22, 163, 74, 0.2);
+}
+
+.auth-demo-hint {
+    margin-top: 22px;
+    padding-top: 18px;
+    border-top: 1px dashed var(--dr-border);
+    font-size: 12.5px;
+    color: var(--dr-text-faint);
+    line-height: 1.6;
+}
+
+.auth-demo-hint code {
+    background: var(--dr-bg);
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: var(--dr-text-muted);
+}
+
+.auth-footnote {
+    font-size: 12px;
+    color: var(--dr-text-faint);
+    text-align: center;
+}
+
+/* ==========================================================================
+   App shell (dashboard / consultation / appointments / profile)
+   ========================================================================== */
+
+.app-shell {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Top header */
+.app-header {
+    height: var(--dr-header-height);
+    background: var(--dr-surface);
+    border-bottom: 1px solid var(--dr-border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    position: sticky;
+    top: 0;
+    z-index: 20;
+}
+
+.app-header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.app-logo {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+}
+
+.app-logo-mark {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: var(--dr-primary);
+    color: #fff;
+    font-weight: 700;
+    font-size: 12.5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.app-logo-text {
+    font-weight: 700;
+    font-size: 16px;
+}
+
+.menu-toggle-btn {
+    display: none;
+    background: none;
+    border: 1px solid var(--dr-border-strong);
+    border-radius: var(--dr-radius-sm);
+    width: 38px;
+    height: 38px;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.app-header-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.header-doctor-chip {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 12px 6px 6px;
+    border-radius: 999px;
+    background: var(--dr-bg);
+    border: 1px solid var(--dr-border);
+}
+
+.avatar-circle {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: var(--dr-primary-light);
+    color: var(--dr-primary-dark);
+    font-weight: 700;
+    font-size: 12.5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.header-doctor-chip .doctor-name-wrap {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.35;
+}
+
+.header-doctor-chip .doctor-name {
+    font-size: 13.5px;
+    font-weight: 600;
+}
+
+.header-doctor-chip .doctor-role {
+    font-size: 11.5px;
+    color: var(--dr-text-muted);
+    display: block;
+}
+
+/* Body: side nav + main content */
+.app-body {
+    flex: 1;
+    display: flex;
+    align-items: stretch;
+}
+
+.app-sidenav {
+    width: var(--dr-nav-width);
+    flex-shrink: 0;
+    background: var(--dr-surface);
+    border-right: 1px solid var(--dr-border);
+    padding: 20px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.nav-link {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 10px 14px;
+    border-radius: var(--dr-radius-sm);
+    color: var(--dr-text-muted);
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.nav-link:hover {
+    background: var(--dr-bg);
+    text-decoration: none;
+    color: var(--dr-text);
+}
+
+.nav-link.is-active {
+    background: var(--dr-primary-light);
+    color: var(--dr-primary-dark);
+}
+
+.nav-link .nav-icon {
+    width: 18px;
+    text-align: center;
+}
+
+.nav-divider {
+    height: 1px;
+    background: var(--dr-border);
+    margin: 10px 4px;
+}
+
+.nav-logout-btn {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 10px 14px;
+    border-radius: var(--dr-radius-sm);
+    background: none;
+    border: none;
+    color: var(--dr-danger);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    text-align: left;
+    width: 100%;
+    margin-top: auto;
+}
+
+.nav-logout-btn:hover {
+    background: var(--dr-danger-light);
+}
+
+.app-main {
+    flex: 1;
+    padding: 26px 28px 60px;
+    min-width: 0;
+}
+
+.page-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 22px;
+    flex-wrap: wrap;
+}
+
+.page-title {
+    font-size: 22px;
+    font-weight: 700;
+}
+
+.page-subtitle {
+    font-size: 14px;
+    color: var(--dr-text-muted);
+    margin-top: 4px;
+}
+
+/* ==========================================================================
+   Cards / generic surfaces
+   ========================================================================== */
+
+.card {
+    background: var(--dr-surface);
+    border: 1px solid var(--dr-border);
+    border-radius: var(--dr-radius-md);
+    box-shadow: var(--dr-shadow-sm);
+    padding: 20px;
+}
+
+.card-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+}
+
+.card-title {
+    font-size: 15.5px;
+    font-weight: 700;
+}
+
+/* ==========================================================================
+   Badges / status pills
+   ========================================================================== */
+
+.badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.badge-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+}
+
+.badge-waiting {
+    background: var(--dr-warning-light);
+    color: var(--dr-warning);
+}
+
+.badge-in-progress {
+    background: var(--dr-accent-light);
+    color: var(--dr-accent);
+}
+
+.badge-completed {
+    background: var(--dr-success-light);
+    color: var(--dr-success);
+}
+
+.badge-no-show,
+.badge-cancelled {
+    background: var(--dr-danger-light);
+    color: var(--dr-danger);
+}
+
+.badge-scheduled {
+    background: #f1eefd;
+    color: #7c3aed;
+}
+
+.badge-normal {
+    background: var(--dr-bg);
+    color: var(--dr-text-muted);
+}
+
+.badge-urgent {
+    background: var(--dr-danger-light);
+    color: var(--dr-danger);
+}
+
+/* ==========================================================================
+   Empty states
+   ========================================================================== */
+
+.empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--dr-text-muted);
+}
+
+.empty-state-icon {
+    font-size: 32px;
+    margin-bottom: 10px;
+}
+
+.empty-state-title {
+    font-weight: 700;
+    color: var(--dr-text);
+    margin-bottom: 4px;
+}
+
+.empty-state-text {
+    font-size: 13.5px;
+}
+
+/* ==========================================================================
+   Utility
+   ========================================================================== */
+
+.text-muted {
+    color: var(--dr-text-muted);
+}
+
+.text-faint {
+    color: var(--dr-text-faint);
+}
+
+.mt-0 {
+    margin-top: 0;
+}
+
+.mb-0 {
+    margin-bottom: 0;
+}
+
+.hidden {
+    display: none !important;
+}
+
+.skeleton-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    color: var(--dr-text-faint);
+    font-size: 13.5px;
+}
+
+/* ==========================================================================
+   Dashboard — stat pills
+   ========================================================================== */
+
+.dashboard-stats {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.stat-pill {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 76px;
+    padding: 8px 14px;
+    border-radius: var(--dr-radius-sm);
+    background: var(--dr-surface);
+    border: 1px solid var(--dr-border);
+}
+
+.stat-value {
+    font-size: 18px;
+    font-weight: 700;
+}
+
+.stat-label {
+    font-size: 11.5px;
+    color: var(--dr-text-muted);
+}
+
+/* ==========================================================================
+   Dashboard — Current / Next patient cards
+   ========================================================================== */
+
+.patient-cards-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+    margin-bottom: 22px;
+}
+
+.patient-card-current {
+    border-top: 3px solid var(--dr-accent);
+}
+
+.patient-card-next {
+    border-top: 3px solid var(--dr-primary);
+}
+
+.patient-card-body {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+}
+
+.patient-token-no {
+    flex-shrink: 0;
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    background: var(--dr-bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 13.5px;
+    color: var(--dr-text-muted);
+}
+
+.patient-name {
+    font-size: 15.5px;
+    font-weight: 700;
+    margin-bottom: 2px;
+}
+
+.patient-meta {
+    font-size: 12.5px;
+    color: var(--dr-text-muted);
+    margin-bottom: 6px;
+}
+
+.patient-reason {
+    font-size: 13.5px;
+    color: var(--dr-text);
+}
+
+.patient-card-actions {
+    margin-top: 16px;
+    display: flex;
+    justify-content: flex-end;
+}
+
+/* ==========================================================================
+   Dashboard / Appointments — tables
+   ========================================================================== */
+
+.queue-table-wrap {
+    overflow-x: auto;
+}
+
+.queue-table,
+.appointments-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+}
+
+.queue-table th,
+.appointments-table th {
+    text-align: left;
+    font-size: 11.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--dr-text-faint);
+    font-weight: 700;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--dr-border);
+    white-space: nowrap;
+}
+
+.queue-table td,
+.appointments-table td {
+    padding: 12px;
+    border-bottom: 1px solid var(--dr-border);
+    vertical-align: middle;
+}
+
+.queue-table tr:last-child td,
+.appointments-table tr:last-child td {
+    border-bottom: none;
+}
+
+.table-link {
+    font-size: 13px;
+    font-weight: 600;
+}
+
+/* ==========================================================================
+   Consultation screen
+   ========================================================================== */
+
+.back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--dr-text-muted);
+    margin-bottom: 14px;
+}
+
+.consultation-layout {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 18px;
+    align-items: start;
+}
+
+.consultation-main {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    min-width: 0;
+}
+
+.consultation-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.patient-info-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 14px;
+}
+
+.patient-info-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--dr-primary-light);
+    color: var(--dr-primary-dark);
+    font-weight: 700;
+    font-size: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.patient-info-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px 20px;
+}
+
+.patient-info-item-label {
+    font-size: 11.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--dr-text-faint);
+    font-weight: 700;
+    margin-bottom: 3px;
+}
+
+.patient-info-item-value {
+    font-size: 14px;
+    color: var(--dr-text);
+}
+
+.history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.history-item {
+    padding: 12px;
+    border-radius: var(--dr-radius-sm);
+    background: var(--dr-bg);
+    border: 1px solid var(--dr-border);
+}
+
+.history-date {
+    font-size: 11.5px;
+    font-weight: 700;
+    color: var(--dr-text-faint);
+    margin-bottom: 4px;
+}
+
+.history-note {
+    font-size: 13.5px;
+    color: var(--dr-text);
+}
+
+.form-textarea {
+    width: 100%;
+    min-height: 110px;
+    padding: 11px 13px;
+    border: 1px solid var(--dr-border-strong);
+    border-radius: var(--dr-radius-sm);
+    background: var(--dr-surface);
+    color: var(--dr-text);
+    outline: none;
+    resize: vertical;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.form-textarea:focus {
+    border-color: var(--dr-primary);
+    box-shadow: 0 0 0 3px var(--dr-primary-light);
+}
+
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 6px;
+}
+
+/* ==========================================================================
+   Appointments screen
+   ========================================================================== */
+
+.filter-tabs {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.filter-tab {
+    padding: 8px 16px;
+    border-radius: 999px;
+    border: 1px solid var(--dr-border-strong);
+    background: var(--dr-surface);
+    color: var(--dr-text-muted);
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.filter-tab:hover {
+    background: var(--dr-bg);
+}
+
+.filter-tab.is-active {
+    background: var(--dr-primary);
+    border-color: var(--dr-primary);
+    color: #fff;
+}
+
+.date-group-label {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--dr-text-faint);
+    padding: 16px 4px 8px;
+}
+
+.date-group-label:first-child {
+    padding-top: 0;
+}
+
+/* ==========================================================================
+   Profile screen
+   ========================================================================== */
+
+.profile-header {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    margin-bottom: 22px;
+}
+
+.profile-avatar-lg {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background: var(--dr-primary-light);
+    color: var(--dr-primary-dark);
+    font-weight: 700;
+    font-size: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.profile-header-name {
+    font-size: 19px;
+    font-weight: 700;
+}
+
+.profile-header-meta {
+    font-size: 13.5px;
+    color: var(--dr-text-muted);
+    margin-top: 3px;
+}
+
+.profile-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 18px 24px;
+}
+
+.profile-grid .form-field.span-2 {
+    grid-column: 1 / -1;
+}
+
+.profile-edit-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 22px;
+    padding-top: 18px;
+    border-top: 1px solid var(--dr-border);
+}
+
+/* ==========================================================================
+   Responsive
+   ========================================================================== */
+
+@media (max-width: 900px) {
+    .app-sidenav {
+        position: fixed;
+        top: var(--dr-header-height);
+        left: 0;
+        bottom: 0;
+        z-index: 30;
+        transform: translateX(-100%);
+        transition: transform 0.2s ease;
+        box-shadow: var(--dr-shadow-lg);
+    }
+
+    .app-sidenav.is-open {
+        transform: translateX(0);
+    }
+
+    .menu-toggle-btn {
+        display: inline-flex;
+    }
+
+    .app-main {
+        padding: 20px 16px 48px;
+    }
+
+    .header-doctor-chip .doctor-name-wrap {
+        display: none;
+    }
+}
+
+@media (max-width: 640px) {
+    .auth-card {
+        padding: 28px 20px 22px;
+    }
+
+    .page-title {
+        font-size: 19px;
+    }
+
+    .app-header {
+        padding: 0 14px;
+    }
+
+    .consultation-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .patient-info-grid,
+    .profile-grid {
+        grid-template-columns: 1fr;
+    }
+}
