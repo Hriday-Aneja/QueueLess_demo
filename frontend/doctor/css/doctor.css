@@ -1,53 +1,136 @@
 /* ==========================================================================
    QueueLess — Doctor Module Stylesheet
    frontend/doctor/css/doctor.css
-   White healthcare theme. Loaded by every page in frontend/doctor/.
+
+   Uses the Patient module (frontend/patient/css/patient.css) as the single
+   design system: soft lavender canvas, floating glass header, Playfair
+   display headings on Inter body copy, vivid purple gradient CTAs, and
+   controlled clay / neumorphic shadows.
+
+   Selectors, class names and markup hooks are unchanged from the previous
+   doctor build — this file only changes how things look.
+   Loaded by every page in frontend/doctor/.
    ========================================================================== */
 
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700;800&display=swap');
+
 :root {
-    /* -- Brand / theme colors ------------------------------------------- */
-    --dr-primary: #0f766e;
-    /* teal — primary action color */
-    --dr-primary-dark: #0b5c56;
-    --dr-primary-light: #e6f5f3;
-    --dr-accent: #2563eb;
-    /* blue — links / secondary accents */
-    --dr-accent-light: #eaf1fd;
+    /* ---- Patient design tokens (verbatim) ---------------------------- */
 
-    --dr-success: #16a34a;
-    --dr-success-light: #eafaf0;
-    --dr-warning: #d97706;
-    --dr-warning-light: #fef6e7;
-    --dr-danger: #dc2626;
-    --dr-danger-light: #fdecec;
+    /* Page canvas */
+    --page-bg: #f7f4fc;
 
-    /* -- Surfaces --------------------------------------------------------- */
-    --dr-bg: #f5f7f8;
-    /* app background, very light grey-white */
-    --dr-surface: #ffffff;
-    /* cards */
-    --dr-border: #e3e8ea;
-    --dr-border-strong: #cfd7da;
+    /* Purple system */
+    --purple: #7c3aed;
+    --purple-light: #a855f7;
+    --purple-soft: #c084fc;
+    --purple-deep: #5b21b6;
+    --purple-btn-grad: linear-gradient(135deg, #b76cff 0%, #8b5cf6 55%, #6d28d9 100%);
 
-    /* -- Text --------------------------------------------------------------- */
-    --dr-text: #1c2b2a;
-    --dr-text-muted: #5f7370;
-    --dr-text-faint: #8b9c99;
+    /* Accents */
+    --accent-pink: #f64fa3;
+    --accent-pink-deep: #d92b83;
+    --accent-green: #22c58b;
+    --accent-blue: #4f8bf6;
+    --accent-amber: #e8a33d;
 
-    /* -- Spacing / shape ------------------------------------------------ */
-    --dr-radius-sm: 8px;
-    --dr-radius-md: 14px;
-    --dr-radius-lg: 20px;
-    --dr-shadow-sm: 0 1px 2px rgba(16, 42, 40, 0.06);
-    --dr-shadow-md: 0 4px 16px rgba(16, 42, 40, 0.08);
-    --dr-shadow-lg: 0 12px 32px rgba(16, 42, 40, 0.12);
+    /* Surfaces */
+    --surface: #ffffff;
+    --surface-soft: rgba(255, 255, 255, 0.68);
+    --surface-off: #fbf9fd;
+    --surface-recessed: #f1edf6;
+    --nav-glass: rgba(255, 255, 255, 0.78);
+
+    /* Text */
+    --heading: #302c36;
+    --body-text: #68636d;
+    --body-faint: #9791a1;
+
+    /* Status */
+    --status-waiting: var(--purple);
+    --status-next: var(--accent-green);
+    --status-arriving: var(--accent-blue);
+    --status-late: var(--accent-amber);
+    --status-cancelled: var(--accent-pink-deep);
+
+    /* Type */
+    --font-display: "Playfair Display", Georgia, serif;
+    --font-ui: "Inter", Arial, sans-serif;
+    --font-heading: var(--font-ui);
+    --font-body: var(--font-ui);
+
+    /* Radius */
+    --radius-hero: 42px;
+    --radius-card: 32px;
+    --radius-control: 20px;
+    --radius-pill: 999px;
+
+    /* Shadows — soft, diffused, never harsh */
+    --shadow-float-nav:
+        0 18px 50px rgba(94, 76, 130, 0.10),
+        -8px -8px 25px rgba(255, 255, 255, 0.95),
+        inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    --shadow-card:
+        18px 18px 45px rgba(112, 95, 140, 0.10),
+        -12px -12px 35px rgba(255, 255, 255, 0.92),
+        inset 0 1px 0 rgba(255, 255, 255, 0.80);
+    --shadow-card-sm:
+        10px 10px 26px rgba(112, 95, 140, 0.09),
+        -8px -8px 22px rgba(255, 255, 255, 0.9);
+    --shadow-btn-primary:
+        0 12px 24px rgba(124, 58, 237, 0.30),
+        inset 0 3px 6px rgba(255, 255, 255, 0.28),
+        inset 0 -3px 6px rgba(69, 30, 150, 0.20);
+    --shadow-btn-secondary:
+        8px 8px 18px rgba(129, 117, 150, 0.12),
+        -7px -7px 18px rgba(255, 255, 255, 0.95);
+    --shadow-pill:
+        8px 10px 24px rgba(105, 90, 130, 0.10),
+        -5px -5px 15px rgba(255, 255, 255, 0.90);
+    --shadow-inset:
+        inset 5px 5px 12px rgba(123, 108, 145, 0.12),
+        inset -5px -5px 12px rgba(255, 255, 255, 0.90);
+
+    /* Two small helper tones used only for readable text on tinted alerts */
+    --accent-green-deep: #15905f;
+
+    /* ---- Legacy doctor tokens, re-pointed at the Patient palette ------
+       Kept so nothing that references --dr-* breaks.                    */
+    --dr-primary: var(--purple);
+    --dr-primary-dark: var(--purple-deep);
+    --dr-primary-light: #f1e9fe;
+    --dr-accent: var(--accent-blue);
+    --dr-accent-light: rgba(79, 139, 246, 0.12);
+
+    --dr-success: var(--accent-green);
+    --dr-success-light: rgba(34, 197, 139, 0.14);
+    --dr-warning: var(--accent-amber);
+    --dr-warning-light: rgba(232, 163, 61, 0.14);
+    --dr-danger: var(--accent-pink-deep);
+    --dr-danger-light: rgba(217, 43, 131, 0.10);
+
+    --dr-bg: var(--page-bg);
+    --dr-surface: var(--surface);
+    --dr-border: rgba(124, 58, 237, 0.12);
+    --dr-border-strong: rgba(124, 58, 237, 0.20);
+
+    --dr-text: var(--heading);
+    --dr-text-muted: var(--body-text);
+    --dr-text-faint: var(--body-faint);
+
+    --dr-radius-sm: 16px;
+    --dr-radius-md: var(--radius-card);
+    --dr-radius-lg: var(--radius-hero);
+    --dr-shadow-sm: var(--shadow-card-sm);
+    --dr-shadow-md: var(--shadow-card);
+    --dr-shadow-lg: var(--shadow-card);
 
     --dr-header-height: 64px;
-    --dr-nav-width: 232px;
+    --dr-nav-width: 248px;
 }
 
 /* ==========================================================================
-   Reset / base
+   Reset / base canvas + typography
    ========================================================================== */
 
 *,
@@ -56,11 +139,23 @@
     box-sizing: border-box;
 }
 
+/* Make the `hidden` attribute win over any display rule below */
+[hidden] {
+    display: none !important;
+}
+
 body {
     margin: 0;
-    font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
-    background: var(--dr-bg);
-    color: var(--dr-text);
+    font-family: var(--font-ui);
+    font-size: 15.5px;
+    min-height: 100vh;
+    background:
+        radial-gradient(circle at 18% 18%, rgba(139, 92, 246, 0.06), transparent 38%),
+        radial-gradient(circle at 82% 64%, rgba(236, 72, 153, 0.045), transparent 38%),
+        radial-gradient(circle at 50% 100%, rgba(79, 139, 246, 0.035), transparent 42%),
+        var(--page-bg);
+    background-attachment: fixed;
+    color: var(--body-text);
     -webkit-font-smoothing: antialiased;
 }
 
@@ -72,13 +167,27 @@ p {
     margin: 0;
 }
 
+h1,
+h2,
+h3 {
+    font-family: var(--font-display);
+    font-weight: 800;
+    color: var(--heading);
+    letter-spacing: -0.02em;
+    line-height: 1.08;
+}
+
+p {
+    color: var(--body-text);
+}
+
 a {
-    color: var(--dr-accent);
+    color: var(--purple);
     text-decoration: none;
 }
 
 a:hover {
-    text-decoration: underline;
+    color: var(--purple-deep);
 }
 
 button,
@@ -94,6 +203,40 @@ img {
     display: block;
 }
 
+@keyframes pageEnter {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes floatSoft {
+
+    0%,
+    100% {
+        transform: translateY(0px);
+    }
+
+    50% {
+        transform: translateY(-14px);
+    }
+}
+
+@keyframes skeleton-shimmer {
+    0% {
+        background-position: 100% 50%;
+    }
+
+    100% {
+        background-position: 0 50%;
+    }
+}
+
 /* ==========================================================================
    Buttons
    ========================================================================== */
@@ -103,67 +246,98 @@ img {
     align-items: center;
     justify-content: center;
     gap: 8px;
-    padding: 11px 20px;
-    border-radius: var(--dr-radius-sm);
-    border: 1px solid transparent;
+    height: 48px;
+    padding: 0 24px;
+    border-radius: 16px;
+    border: 0;
+    font-family: var(--font-heading);
     font-size: 14.5px;
-    font-weight: 600;
+    font-weight: 700;
     cursor: pointer;
-    transition: background 0.15s ease, border-color 0.15s ease, transform 0.05s ease;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease, color 0.15s ease;
     white-space: nowrap;
 }
 
-.btn:active {
-    transform: translateY(1px);
+.btn:hover {
+    text-decoration: none;
+}
+
+.btn:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.20);
 }
 
 .btn:disabled {
-    opacity: 0.6;
+    opacity: 0.5;
     cursor: not-allowed;
-    transform: none;
+    transform: none !important;
 }
 
 .btn-primary {
-    background: var(--dr-primary);
+    background: var(--purple-btn-grad);
     color: #fff;
+    box-shadow: var(--shadow-btn-primary);
 }
 
 .btn-primary:hover:not(:disabled) {
-    background: var(--dr-primary-dark);
+    color: #fff;
+    transform: translateY(-3px);
+}
+
+.btn-primary:active:not(:disabled) {
+    transform: scale(0.96);
 }
 
 .btn-secondary {
-    background: var(--dr-surface);
-    color: var(--dr-text);
-    border-color: var(--dr-border-strong);
+    background: var(--surface-soft);
+    color: var(--heading);
+    box-shadow: var(--shadow-btn-secondary);
 }
 
 .btn-secondary:hover:not(:disabled) {
-    background: #f0f3f3;
+    color: var(--heading);
+    transform: translateY(-2px);
+}
+
+.btn-secondary:active:not(:disabled) {
+    transform: scale(0.96);
 }
 
 .btn-danger {
-    background: var(--dr-danger);
+    background: linear-gradient(135deg, #ff8fb0, #d9285f);
     color: #fff;
+    box-shadow: 0 10px 22px rgba(217, 40, 95, 0.28);
 }
 
 .btn-danger:hover:not(:disabled) {
-    background: #b91c1c;
+    color: #fff;
+    transform: translateY(-2px);
+}
+
+.btn-danger:active:not(:disabled) {
+    transform: scale(0.96);
 }
 
 .btn-outline {
-    background: transparent;
-    color: var(--dr-primary);
-    border-color: var(--dr-primary);
+    background: var(--surface-soft);
+    color: var(--purple);
+    box-shadow: var(--shadow-btn-secondary);
 }
 
 .btn-outline:hover:not(:disabled) {
-    background: var(--dr-primary-light);
+    color: var(--purple-deep);
+    transform: translateY(-2px);
+}
+
+.btn-outline:active:not(:disabled) {
+    transform: scale(0.96);
 }
 
 .btn-sm {
-    padding: 7px 14px;
+    height: 40px;
+    padding: 0 16px;
     font-size: 13px;
+    border-radius: 12px;
 }
 
 .btn-block {
@@ -175,15 +349,56 @@ img {
    ========================================================================== */
 
 .doctor-auth-body {
+    position: relative;
+    overflow: hidden;
     min-height: 100vh;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(180deg, #ffffff 0%, var(--dr-bg) 100%);
+    background:
+        radial-gradient(circle at 18% 18%, rgba(139, 92, 246, 0.06), transparent 38%),
+        radial-gradient(circle at 82% 64%, rgba(236, 72, 153, 0.045), transparent 38%),
+        radial-gradient(circle at 50% 100%, rgba(79, 139, 246, 0.035), transparent 42%),
+        var(--page-bg);
     padding: 24px;
 }
 
+/* Inert floating decorative shapes — same as the Patient auth screen */
+.doctor-auth-body::before,
+.doctor-auth-body::after {
+    content: "";
+    position: absolute;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.doctor-auth-body::before {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    top: 8%;
+    right: 12%;
+    background: radial-gradient(circle at 35% 25%, #ff8fc9, #f64fa3 55%, #d92b83);
+    box-shadow: 18px 20px 35px rgba(219, 39, 119, 0.18), inset 8px 8px 16px rgba(255, 255, 255, 0.22);
+    opacity: 0.9;
+    animation: floatSoft 9.5s ease-in-out infinite;
+}
+
+.doctor-auth-body::after {
+    width: 64px;
+    height: 64px;
+    border-radius: 18px;
+    bottom: 12%;
+    left: 12%;
+    background: linear-gradient(145deg, #d08aff, #8b5cf6);
+    box-shadow: 12px 18px 30px rgba(124, 58, 237, 0.22), inset 5px 5px 10px rgba(255, 255, 255, 0.25), inset -5px -5px 12px rgba(87, 35, 174, 0.15);
+    opacity: 0.85;
+    animation: floatSoft 8s ease-in-out infinite;
+}
+
 .auth-wrapper {
+    position: relative;
+    z-index: 1;
     width: 100%;
     max-width: 420px;
     display: flex;
@@ -194,10 +409,9 @@ img {
 
 .auth-card {
     width: 100%;
-    background: var(--dr-surface);
-    border: 1px solid var(--dr-border);
-    border-radius: var(--dr-radius-lg);
-    box-shadow: var(--dr-shadow-lg);
+    background: var(--surface-soft);
+    border-radius: var(--radius-hero);
+    box-shadow: var(--shadow-card);
     padding: 36px 32px 28px;
 }
 
@@ -205,37 +419,41 @@ img {
     display: flex;
     align-items: center;
     gap: 10px;
-    margin-bottom: 20px;
+    margin-bottom: 22px;
 }
 
 .auth-brand-mark {
     width: 40px;
     height: 40px;
-    border-radius: 10px;
-    background: var(--dr-primary);
+    border-radius: 14px;
+    background: var(--purple-btn-grad);
     color: #fff;
-    font-weight: 700;
+    font-family: var(--font-heading);
+    font-weight: 800;
     font-size: 15px;
     display: flex;
     align-items: center;
     justify-content: center;
+    box-shadow: var(--shadow-btn-primary);
 }
 
 .auth-brand-name {
+    font-family: var(--font-heading);
     font-size: 19px;
-    font-weight: 700;
-    color: var(--dr-text);
+    font-weight: 900;
+    letter-spacing: 0;
+    color: var(--heading);
 }
 
 .auth-title {
-    font-size: 22px;
-    font-weight: 700;
+    font-size: 24px;
+    font-weight: 800;
     margin-bottom: 6px;
 }
 
 .auth-subtitle {
-    font-size: 14px;
-    color: var(--dr-text-muted);
+    font-size: 13.5px;
+    color: var(--body-text);
     margin-bottom: 24px;
 }
 
@@ -245,44 +463,72 @@ img {
     gap: 18px;
 }
 
+/* ---- Form fields — soft recessed clay ---------------------------------- */
+
 .form-field {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 8px;
 }
 
 .form-field label {
+    font-family: var(--font-ui);
     font-size: 13.5px;
-    font-weight: 600;
-    color: var(--dr-text);
+    font-weight: 700;
+    color: var(--heading);
 }
 
 .form-field input,
 .form-field select,
 .form-field textarea {
-    padding: 11px 13px;
-    border: 1px solid var(--dr-border-strong);
-    border-radius: var(--dr-radius-sm);
-    background: var(--dr-surface);
-    color: var(--dr-text);
+    height: 52px;
+    padding: 0 18px;
+    border: 0;
+    border-radius: 16px;
+    background: var(--surface-recessed);
+    color: var(--heading);
+    box-shadow: var(--shadow-inset);
+    font-family: var(--font-body);
     outline: none;
-    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    transition: background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.form-field textarea {
+    height: auto;
+    padding: 14px 18px;
+    min-height: 96px;
+    resize: vertical;
+}
+
+.form-field input::placeholder,
+.form-field textarea::placeholder {
+    color: var(--body-faint);
 }
 
 .form-field input:focus,
 .form-field select:focus,
 .form-field textarea:focus {
-    border-color: var(--dr-primary);
-    box-shadow: 0 0 0 3px var(--dr-primary-light);
+    outline: none;
+    background: #fff;
+    box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.12), inset 3px 3px 8px rgba(120, 100, 145, 0.08);
 }
 
-.form-field.has-error input {
-    border-color: var(--dr-danger);
+.form-field input:disabled {
+    background: var(--surface-recessed);
+    color: var(--body-faint);
+    box-shadow: none;
+}
+
+.form-field.has-error input,
+.form-field.has-error select,
+.form-field.has-error textarea {
+    box-shadow: 0 0 0 2px var(--accent-pink-deep);
 }
 
 .field-error {
     font-size: 12.5px;
-    color: var(--dr-danger);
+    font-weight: 700;
+    color: var(--accent-pink-deep);
     min-height: 15px;
 }
 
@@ -299,55 +545,64 @@ img {
 .checkbox-label {
     display: flex;
     align-items: center;
-    gap: 7px;
+    gap: 8px;
     font-size: 13.5px;
-    color: var(--dr-text-muted);
+    color: var(--body-text);
     cursor: pointer;
 }
 
 .checkbox-label input {
-    accent-color: var(--dr-primary);
+    accent-color: var(--purple);
 }
 
 .auth-link-muted {
     font-size: 13px;
-    color: var(--dr-text-muted);
+    font-weight: 700;
+    color: var(--body-faint);
+}
+
+.auth-link-muted:hover {
+    color: var(--purple);
 }
 
 .form-alert {
-    padding: 10px 12px;
-    border-radius: var(--dr-radius-sm);
-    font-size: 13.5px;
-    background: var(--dr-danger-light);
-    color: var(--dr-danger);
-    border: 1px solid rgba(220, 38, 38, 0.2);
+    padding: 12px 14px;
+    border-radius: var(--radius-control);
+    font-size: 13px;
+    font-weight: 700;
+    background: rgba(246, 79, 163, 0.10);
+    color: var(--accent-pink-deep);
 }
 
 .form-alert.is-success {
-    background: var(--dr-success-light);
-    color: var(--dr-success);
-    border-color: rgba(22, 163, 74, 0.2);
+    background: rgba(34, 197, 139, 0.12);
+    color: var(--accent-green-deep);
 }
 
 .auth-demo-hint {
     margin-top: 22px;
     padding-top: 18px;
-    border-top: 1px dashed var(--dr-border);
+    border-top: 1px dashed rgba(124, 58, 237, 0.18);
     font-size: 12.5px;
-    color: var(--dr-text-faint);
+    color: var(--body-faint);
     line-height: 1.6;
 }
 
+.auth-demo-hint p {
+    color: var(--body-faint);
+}
+
 .auth-demo-hint code {
-    background: var(--dr-bg);
-    padding: 2px 6px;
-    border-radius: 4px;
-    color: var(--dr-text-muted);
+    background: var(--surface-recessed);
+    padding: 2px 8px;
+    border-radius: 8px;
+    color: var(--purple-deep);
+    box-shadow: var(--shadow-inset);
 }
 
 .auth-footnote {
     font-size: 12px;
-    color: var(--dr-text-faint);
+    color: var(--body-faint);
     text-align: center;
 }
 
@@ -356,23 +611,28 @@ img {
    ========================================================================== */
 
 .app-shell {
+    position: relative;
     min-height: 100vh;
     display: flex;
     flex-direction: column;
 }
 
-/* Top header */
+/* Top header — floating glass pill */
 .app-header {
     height: var(--dr-header-height);
-    background: var(--dr-surface);
-    border-bottom: 1px solid var(--dr-border);
+    margin: 14px 20px 0;
+    padding: 0 12px 0 20px;
+    background: var(--nav-glass);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-radius: 22px;
+    box-shadow: var(--shadow-float-nav);
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 24px;
     position: sticky;
-    top: 0;
-    z-index: 20;
+    top: 14px;
+    z-index: 40;
 }
 
 .app-header-left {
@@ -384,37 +644,46 @@ img {
 .app-logo {
     display: flex;
     align-items: center;
-    gap: 9px;
+    gap: 10px;
 }
 
 .app-logo-mark {
-    width: 32px;
-    height: 32px;
-    border-radius: 8px;
-    background: var(--dr-primary);
+    width: 34px;
+    height: 34px;
+    border-radius: 12px;
+    background: var(--purple-btn-grad);
     color: #fff;
-    font-weight: 700;
+    font-family: var(--font-heading);
+    font-weight: 800;
     font-size: 12.5px;
     display: flex;
     align-items: center;
     justify-content: center;
+    box-shadow: var(--shadow-btn-primary);
 }
 
 .app-logo-text {
-    font-weight: 700;
-    font-size: 16px;
+    font-family: var(--font-heading);
+    font-weight: 900;
+    font-size: 17px;
+    color: var(--heading);
 }
 
 .menu-toggle-btn {
     display: none;
     background: none;
-    border: 1px solid var(--dr-border-strong);
-    border-radius: var(--dr-radius-sm);
-    width: 38px;
-    height: 38px;
+    border: 0;
+    border-radius: 50%;
+    width: 42px;
+    height: 42px;
     align-items: center;
     justify-content: center;
+    color: var(--heading);
     cursor: pointer;
+}
+
+.menu-toggle-btn:hover {
+    background: var(--surface-recessed);
 }
 
 .app-header-right {
@@ -427,20 +696,21 @@ img {
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 6px 12px 6px 6px;
-    border-radius: 999px;
-    background: var(--dr-bg);
-    border: 1px solid var(--dr-border);
+    padding: 6px 16px 6px 6px;
+    border-radius: var(--radius-pill);
+    background: var(--surface-soft);
+    box-shadow: var(--shadow-pill);
 }
 
 .avatar-circle {
-    width: 30px;
-    height: 30px;
+    width: 36px;
+    height: 36px;
     border-radius: 50%;
-    background: var(--dr-primary-light);
-    color: var(--dr-primary-dark);
-    font-weight: 700;
-    font-size: 12.5px;
+    background: var(--purple-btn-grad);
+    color: #fff;
+    font-family: var(--font-heading);
+    font-weight: 800;
+    font-size: 13px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -454,13 +724,15 @@ img {
 }
 
 .header-doctor-chip .doctor-name {
+    font-family: var(--font-heading);
     font-size: 13.5px;
-    font-weight: 600;
+    font-weight: 800;
+    color: var(--heading);
 }
 
 .header-doctor-chip .doctor-role {
     font-size: 11.5px;
-    color: var(--dr-text-muted);
+    color: var(--body-faint);
     display: block;
 }
 
@@ -468,40 +740,51 @@ img {
 .app-body {
     flex: 1;
     display: flex;
-    align-items: stretch;
+    align-items: flex-start;
 }
 
+/* Side nav — floating soft card, same treatment as the Patient sidebar */
 .app-sidenav {
     width: var(--dr-nav-width);
     flex-shrink: 0;
-    background: var(--dr-surface);
-    border-right: 1px solid var(--dr-border);
-    padding: 20px 12px;
+    align-self: flex-start;
+    position: sticky;
+    top: calc(var(--dr-header-height) + 32px);
+    height: calc(100vh - var(--dr-header-height) - 52px);
+    margin: 18px 0 20px 20px;
+    background: var(--surface-off);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-card);
+    padding: 22px 14px 18px;
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 3px;
+    z-index: 30;
 }
 
 .nav-link {
     display: flex;
     align-items: center;
-    gap: 11px;
-    padding: 10px 14px;
-    border-radius: var(--dr-radius-sm);
-    color: var(--dr-text-muted);
+    gap: 12px;
+    padding: 12px 14px;
+    border-radius: 14px;
+    color: var(--body-text);
+    font-family: var(--font-heading);
     font-size: 14px;
     font-weight: 600;
+    position: relative;
 }
 
 .nav-link:hover {
-    background: var(--dr-bg);
+    background: var(--surface-recessed);
     text-decoration: none;
-    color: var(--dr-text);
+    color: var(--purple-deep);
 }
 
 .nav-link.is-active {
-    background: var(--dr-primary-light);
-    color: var(--dr-primary-dark);
+    background: var(--purple-btn-grad);
+    color: #fff;
+    box-shadow: var(--shadow-btn-primary);
 }
 
 .nav-link .nav-icon {
@@ -511,19 +794,20 @@ img {
 
 .nav-divider {
     height: 1px;
-    background: var(--dr-border);
+    background: rgba(124, 58, 237, 0.12);
     margin: 10px 4px;
 }
 
 .nav-logout-btn {
     display: flex;
     align-items: center;
-    gap: 11px;
-    padding: 10px 14px;
-    border-radius: var(--dr-radius-sm);
+    gap: 12px;
+    padding: 12px 14px;
+    border-radius: 14px;
     background: none;
     border: none;
-    color: var(--dr-danger);
+    color: var(--accent-pink-deep);
+    font-family: var(--font-heading);
     font-size: 14px;
     font-weight: 600;
     cursor: pointer;
@@ -533,13 +817,14 @@ img {
 }
 
 .nav-logout-btn:hover {
-    background: var(--dr-danger-light);
+    background: rgba(217, 43, 131, 0.08);
 }
 
 .app-main {
     flex: 1;
-    padding: 26px 28px 60px;
+    padding: 36px 40px 56px;
     min-width: 0;
+    animation: pageEnter 0.5s ease backwards;
 }
 
 .page-header {
@@ -547,101 +832,114 @@ img {
     align-items: flex-start;
     justify-content: space-between;
     gap: 16px;
-    margin-bottom: 22px;
+    margin-bottom: 26px;
     flex-wrap: wrap;
 }
 
 .page-title {
-    font-size: 22px;
-    font-weight: 700;
+    font-family: var(--font-display);
+    font-size: clamp(1.6rem, 3vw, 2.15rem);
+    font-weight: 800;
 }
 
 .page-subtitle {
     font-size: 14px;
-    color: var(--dr-text-muted);
-    margin-top: 4px;
+    color: var(--body-text);
+    margin-top: 6px;
 }
 
 /* ==========================================================================
-   Cards / generic surfaces
+   Cards / generic surfaces — large soft floating surface
    ========================================================================== */
 
 .card {
-    background: var(--dr-surface);
-    border: 1px solid var(--dr-border);
-    border-radius: var(--dr-radius-md);
-    box-shadow: var(--dr-shadow-sm);
-    padding: 20px;
+    background: var(--surface-off);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-card);
+    padding: 26px;
 }
 
 .card-title-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 14px;
+    margin-bottom: 16px;
 }
 
 .card-title {
-    font-size: 15.5px;
-    font-weight: 700;
+    font-size: 17px;
+    font-weight: 800;
 }
 
 /* ==========================================================================
-   Badges / status pills
+   Badges / status pills — pill with coloured dot
    ========================================================================== */
 
 .badge {
     display: inline-flex;
     align-items: center;
-    gap: 5px;
-    padding: 3px 10px;
-    border-radius: 999px;
+    gap: 7px;
+    padding: 6px 14px 6px 10px;
+    border-radius: var(--radius-pill);
+    font-family: var(--font-heading);
     font-size: 12px;
-    font-weight: 700;
+    font-weight: 800;
     white-space: nowrap;
+    background: var(--surface-soft);
+    box-shadow: var(--shadow-card-sm);
+    color: var(--purple);
 }
 
-.badge-dot {
-    width: 6px;
-    height: 6px;
+.badge::before {
+    content: "";
+    width: 8px;
+    height: 8px;
     border-radius: 50%;
+    flex: none;
     background: currentColor;
 }
 
+/* The dot is drawn by ::before so every badge (with or without the
+   .badge-dot element) gets the same Patient-style dot. */
+.badge-dot {
+    display: none;
+}
+
 .badge-waiting {
-    background: var(--dr-warning-light);
-    color: var(--dr-warning);
+    color: var(--status-waiting);
 }
 
 .badge-in-progress {
-    background: var(--dr-accent-light);
-    color: var(--dr-accent);
+    color: var(--status-arriving);
 }
 
 .badge-completed {
-    background: var(--dr-success-light);
-    color: var(--dr-success);
+    color: var(--accent-green);
 }
 
 .badge-no-show,
 .badge-cancelled {
-    background: var(--dr-danger-light);
-    color: var(--dr-danger);
+    color: var(--status-cancelled);
 }
 
 .badge-scheduled {
-    background: #f1eefd;
-    color: #7c3aed;
+    color: var(--body-text);
+}
+
+.badge-scheduled::before {
+    background: var(--body-faint);
 }
 
 .badge-normal {
-    background: var(--dr-bg);
-    color: var(--dr-text-muted);
+    color: var(--body-text);
+}
+
+.badge-normal::before {
+    background: var(--body-faint);
 }
 
 .badge-urgent {
-    background: var(--dr-danger-light);
-    color: var(--dr-danger);
+    color: var(--accent-pink-deep);
 }
 
 /* ==========================================================================
@@ -650,23 +948,37 @@ img {
 
 .empty-state {
     text-align: center;
-    padding: 40px 20px;
-    color: var(--dr-text-muted);
+    padding: 52px 24px;
+    color: var(--body-text);
 }
 
 .empty-state-icon {
-    font-size: 32px;
-    margin-bottom: 10px;
+    width: 64px;
+    height: 64px;
+    margin: 0 auto 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 26px;
+    border-radius: 50%;
+    background: var(--surface-recessed);
+    color: var(--purple);
+    box-shadow: var(--shadow-inset);
 }
 
 .empty-state-title {
-    font-weight: 700;
-    color: var(--dr-text);
-    margin-bottom: 4px;
+    font-family: var(--font-display);
+    font-size: 17px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--heading);
+    margin-bottom: 6px;
 }
 
 .empty-state-text {
     font-size: 13.5px;
+    max-width: 320px;
+    margin: 0 auto;
 }
 
 /* ==========================================================================
@@ -674,11 +986,11 @@ img {
    ========================================================================== */
 
 .text-muted {
-    color: var(--dr-text-muted);
+    color: var(--body-text);
 }
 
 .text-faint {
-    color: var(--dr-text-faint);
+    color: var(--body-faint);
 }
 
 .mt-0 {
@@ -698,8 +1010,12 @@ img {
     align-items: center;
     justify-content: center;
     padding: 40px;
-    color: var(--dr-text-faint);
+    color: var(--body-faint);
     font-size: 13.5px;
+    border-radius: var(--radius-control);
+    background: linear-gradient(90deg, var(--surface-recessed) 25%, #e8e1f2 37%, var(--surface-recessed) 63%);
+    background-size: 400% 100%;
+    animation: skeleton-shimmer 1.4s ease infinite;
 }
 
 /* ==========================================================================
@@ -708,7 +1024,7 @@ img {
 
 .dashboard-stats {
     display: flex;
-    gap: 10px;
+    gap: 14px;
     flex-wrap: wrap;
 }
 
@@ -716,21 +1032,26 @@ img {
     display: flex;
     flex-direction: column;
     align-items: center;
-    min-width: 76px;
-    padding: 8px 14px;
-    border-radius: var(--dr-radius-sm);
-    background: var(--dr-surface);
-    border: 1px solid var(--dr-border);
+    min-width: 84px;
+    padding: 12px 18px;
+    border-radius: var(--radius-control);
+    background: var(--surface-recessed);
+    box-shadow: var(--shadow-inset);
 }
 
 .stat-value {
-    font-size: 18px;
-    font-weight: 700;
+    font-family: var(--font-ui);
+    font-size: 22px;
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -0.03em;
+    color: var(--heading);
 }
 
 .stat-label {
     font-size: 11.5px;
-    color: var(--dr-text-muted);
+    color: var(--body-faint);
+    margin-top: 3px;
 }
 
 /* ==========================================================================
@@ -740,57 +1061,67 @@ img {
 .patient-cards-row {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 18px;
-    margin-bottom: 22px;
+    gap: 22px;
+    margin-bottom: 26px;
 }
 
 .patient-card-current {
-    border-top: 3px solid var(--dr-accent);
+    background: linear-gradient(160deg, rgba(139, 92, 246, 0.10), var(--surface-off) 58%);
 }
 
 .patient-card-next {
-    border-top: 3px solid var(--dr-primary);
+    background: linear-gradient(160deg, rgba(34, 197, 139, 0.09), var(--surface-off) 58%);
 }
 
 .patient-card-body {
     display: flex;
-    gap: 14px;
+    gap: 16px;
     align-items: flex-start;
 }
 
 .patient-token-no {
     flex-shrink: 0;
-    width: 44px;
-    height: 44px;
-    border-radius: 10px;
-    background: var(--dr-bg);
+    width: 50px;
+    height: 50px;
+    border-radius: 16px;
+    background: var(--surface-recessed);
+    box-shadow: var(--shadow-inset);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-weight: 700;
-    font-size: 13.5px;
-    color: var(--dr-text-muted);
+    font-family: var(--font-heading);
+    font-weight: 800;
+    font-size: 15px;
+    color: var(--purple);
+}
+
+.patient-card-current .patient-token-no {
+    background: var(--purple-btn-grad);
+    color: #fff;
+    box-shadow: var(--shadow-btn-primary);
 }
 
 .patient-name {
-    font-size: 15.5px;
-    font-weight: 700;
-    margin-bottom: 2px;
+    font-family: var(--font-heading);
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--heading);
+    margin-bottom: 3px;
 }
 
 .patient-meta {
     font-size: 12.5px;
-    color: var(--dr-text-muted);
-    margin-bottom: 6px;
+    color: var(--body-faint);
+    margin-bottom: 8px;
 }
 
 .patient-reason {
     font-size: 13.5px;
-    color: var(--dr-text);
+    color: var(--body-text);
 }
 
 .patient-card-actions {
-    margin-top: 16px;
+    margin-top: 18px;
     display: flex;
     justify-content: flex-end;
 }
@@ -815,19 +1146,30 @@ img {
     text-align: left;
     font-size: 11.5px;
     text-transform: uppercase;
-    letter-spacing: 0.03em;
-    color: var(--dr-text-faint);
-    font-weight: 700;
-    padding: 10px 12px;
-    border-bottom: 1px solid var(--dr-border);
+    letter-spacing: 0.04em;
+    color: var(--body-faint);
+    font-weight: 800;
+    padding: 10px 14px;
+    border-bottom: 1px solid rgba(139, 92, 246, 0.14);
     white-space: nowrap;
 }
 
 .queue-table td,
 .appointments-table td {
-    padding: 12px;
-    border-bottom: 1px solid var(--dr-border);
+    padding: 14px;
+    color: var(--body-text);
+    border-bottom: 1px solid rgba(139, 92, 246, 0.10);
     vertical-align: middle;
+}
+
+.queue-table tbody tr,
+.appointments-table tbody tr {
+    transition: background-color 0.15s ease;
+}
+
+.queue-table tbody tr:hover,
+.appointments-table tbody tr:hover {
+    background: rgba(124, 58, 237, 0.05);
 }
 
 .queue-table tr:last-child td,
@@ -836,8 +1178,10 @@ img {
 }
 
 .table-link {
+    font-family: var(--font-heading);
     font-size: 13px;
-    font-weight: 600;
+    font-weight: 800;
+    color: var(--purple);
 }
 
 /* ==========================================================================
@@ -848,120 +1192,135 @@ img {
     display: inline-flex;
     align-items: center;
     gap: 6px;
+    font-family: var(--font-heading);
     font-size: 13.5px;
-    font-weight: 600;
-    color: var(--dr-text-muted);
-    margin-bottom: 14px;
+    font-weight: 700;
+    color: var(--body-text);
+    padding: 9px 16px 9px 12px;
+    margin-bottom: 18px;
+    border-radius: 14px;
+    background: var(--surface-soft);
+    box-shadow: var(--shadow-card-sm);
+}
+
+.back-link:hover {
+    color: var(--purple);
+    text-decoration: none;
 }
 
 .consultation-layout {
     display: grid;
     grid-template-columns: 1fr 320px;
-    gap: 18px;
+    gap: 22px;
     align-items: start;
 }
 
 .consultation-main {
     display: flex;
     flex-direction: column;
-    gap: 18px;
+    gap: 22px;
     min-width: 0;
 }
 
 .consultation-sidebar {
     display: flex;
     flex-direction: column;
-    gap: 18px;
+    gap: 22px;
 }
 
 .patient-info-header {
     display: flex;
     align-items: center;
-    gap: 14px;
-    margin-bottom: 14px;
+    gap: 16px;
+    margin-bottom: 18px;
 }
 
 .patient-info-avatar {
-    width: 48px;
-    height: 48px;
+    width: 52px;
+    height: 52px;
     border-radius: 50%;
-    background: var(--dr-primary-light);
-    color: var(--dr-primary-dark);
-    font-weight: 700;
-    font-size: 15px;
+    background: var(--purple-btn-grad);
+    color: #fff;
+    font-family: var(--font-heading);
+    font-weight: 800;
+    font-size: 16px;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
+    box-shadow: var(--shadow-btn-primary);
 }
 
 .patient-info-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 12px 20px;
+    gap: 14px 20px;
 }
 
 .patient-info-item-label {
     font-size: 11.5px;
     text-transform: uppercase;
-    letter-spacing: 0.03em;
-    color: var(--dr-text-faint);
-    font-weight: 700;
-    margin-bottom: 3px;
+    letter-spacing: 0.04em;
+    color: var(--body-faint);
+    font-weight: 800;
+    margin-bottom: 4px;
 }
 
 .patient-info-item-value {
     font-size: 14px;
-    color: var(--dr-text);
+    font-weight: 600;
+    color: var(--heading);
 }
 
 .history-list {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 14px;
 }
 
 .history-item {
-    padding: 12px;
-    border-radius: var(--dr-radius-sm);
-    background: var(--dr-bg);
-    border: 1px solid var(--dr-border);
+    padding: 16px 18px;
+    border-radius: var(--radius-control);
+    background: var(--surface-recessed);
+    box-shadow: var(--shadow-inset);
 }
 
 .history-date {
     font-size: 11.5px;
-    font-weight: 700;
-    color: var(--dr-text-faint);
+    font-weight: 800;
+    color: var(--body-faint);
     margin-bottom: 4px;
 }
 
 .history-note {
     font-size: 13.5px;
-    color: var(--dr-text);
+    color: var(--heading);
 }
 
 .form-textarea {
     width: 100%;
     min-height: 110px;
-    padding: 11px 13px;
-    border: 1px solid var(--dr-border-strong);
-    border-radius: var(--dr-radius-sm);
-    background: var(--dr-surface);
-    color: var(--dr-text);
+    padding: 14px 18px;
+    border: 0;
+    border-radius: 16px;
+    background: var(--surface-recessed);
+    color: var(--heading);
+    box-shadow: var(--shadow-inset);
     outline: none;
     resize: vertical;
-    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    transition: background-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .form-textarea:focus {
-    border-color: var(--dr-primary);
-    box-shadow: 0 0 0 3px var(--dr-primary-light);
+    outline: none;
+    background: #fff;
+    box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.12), inset 3px 3px 8px rgba(120, 100, 145, 0.08);
 }
 
 .form-actions {
     display: flex;
     justify-content: flex-end;
-    gap: 10px;
+    gap: 12px;
     margin-top: 6px;
 }
 
@@ -971,37 +1330,41 @@ img {
 
 .filter-tabs {
     display: flex;
-    gap: 6px;
+    gap: 10px;
     flex-wrap: wrap;
 }
 
 .filter-tab {
-    padding: 8px 16px;
-    border-radius: 999px;
-    border: 1px solid var(--dr-border-strong);
-    background: var(--dr-surface);
-    color: var(--dr-text-muted);
-    font-size: 13.5px;
-    font-weight: 600;
+    padding: 10px 18px;
+    border-radius: 12px;
+    border: 0;
+    background: var(--surface-off);
+    box-shadow: var(--shadow-card-sm);
+    color: var(--body-text);
+    font-family: var(--font-heading);
+    font-size: 12.5px;
+    font-weight: 700;
     cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 .filter-tab:hover {
-    background: var(--dr-bg);
+    color: var(--purple-deep);
+    transform: translateY(-2px);
 }
 
 .filter-tab.is-active {
-    background: var(--dr-primary);
-    border-color: var(--dr-primary);
+    background: var(--purple-btn-grad);
     color: #fff;
+    box-shadow: var(--shadow-btn-primary);
 }
 
 .date-group-label {
     font-size: 12px;
-    font-weight: 700;
+    font-weight: 800;
     text-transform: uppercase;
-    letter-spacing: 0.03em;
-    color: var(--dr-text-faint);
+    letter-spacing: 0.04em;
+    color: var(--body-faint);
     padding: 16px 4px 8px;
 }
 
@@ -1017,31 +1380,36 @@ img {
     display: flex;
     align-items: center;
     gap: 18px;
-    margin-bottom: 22px;
+    margin-bottom: 26px;
 }
 
 .profile-avatar-lg {
-    width: 72px;
-    height: 72px;
+    width: 68px;
+    height: 68px;
     border-radius: 50%;
-    background: var(--dr-primary-light);
-    color: var(--dr-primary-dark);
-    font-weight: 700;
-    font-size: 22px;
+    background: var(--purple-btn-grad);
+    color: #fff;
+    font-family: var(--font-heading);
+    font-weight: 800;
+    font-size: 21px;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
+    box-shadow: var(--shadow-btn-primary);
 }
 
 .profile-header-name {
-    font-size: 19px;
-    font-weight: 700;
+    font-family: var(--font-display);
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--heading);
 }
 
 .profile-header-meta {
     font-size: 13.5px;
-    color: var(--dr-text-muted);
+    color: var(--body-faint);
     margin-top: 3px;
 }
 
@@ -1058,10 +1426,10 @@ img {
 .profile-edit-actions {
     display: flex;
     justify-content: flex-end;
-    gap: 10px;
-    margin-top: 22px;
-    padding-top: 18px;
-    border-top: 1px solid var(--dr-border);
+    gap: 12px;
+    margin-top: 26px;
+    padding-top: 20px;
+    border-top: 1px solid rgba(124, 58, 237, 0.12);
 }
 
 /* ==========================================================================
@@ -1069,19 +1437,34 @@ img {
    ========================================================================== */
 
 @media (max-width: 900px) {
+    .app-header {
+        height: 60px;
+        margin: 14px 14px 0;
+        padding: 0 8px 0 18px;
+        border-radius: 18px;
+    }
+
+    /* Drawer — floating soft panel below the header, no dark chrome */
     .app-sidenav {
         position: fixed;
-        top: var(--dr-header-height);
-        left: 0;
-        bottom: 0;
-        z-index: 30;
-        transform: translateX(-100%);
-        transition: transform 0.2s ease;
-        box-shadow: var(--dr-shadow-lg);
+        top: calc(var(--dr-header-height) + 28px);
+        left: 14px;
+        bottom: 14px;
+        width: min(80vw, 300px);
+        height: auto;
+        align-self: stretch;
+        margin: 0;
+        padding: 22px 14px 18px;
+        z-index: 60;
+        transform: translateX(-150%);
+        visibility: hidden;
+        transition: transform 0.2s ease, visibility 0s linear 0.2s;
     }
 
     .app-sidenav.is-open {
         transform: translateX(0);
+        visibility: visible;
+        transition: transform 0.2s ease, visibility 0s;
     }
 
     .menu-toggle-btn {
@@ -1089,25 +1472,40 @@ img {
     }
 
     .app-main {
-        padding: 20px 16px 48px;
+        padding: 26px 20px 56px;
     }
 
     .header-doctor-chip .doctor-name-wrap {
         display: none;
     }
+
+    .header-doctor-chip {
+        padding-right: 6px;
+    }
+}
+
+@media (max-width: 720px) {
+    .patient-cards-row {
+        grid-template-columns: 1fr;
+    }
 }
 
 @media (max-width: 640px) {
     .auth-card {
-        padding: 28px 20px 22px;
+        padding: 28px 22px 22px;
     }
 
-    .page-title {
-        font-size: 19px;
+    .doctor-auth-body::before,
+    .doctor-auth-body::after {
+        display: none;
     }
 
     .app-header {
-        padding: 0 14px;
+        margin: 12px 12px 0;
+    }
+
+    .app-main {
+        padding: 22px 14px 48px;
     }
 
     .consultation-layout {
@@ -1117,5 +1515,20 @@ img {
     .patient-info-grid,
     .profile-grid {
         grid-template-columns: 1fr;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+    .app-main,
+    .skeleton-loading,
+    .doctor-auth-body::before,
+    .doctor-auth-body::after {
+        animation: none !important;
+    }
+
+    .btn,
+    .filter-tab {
+        transition: none;
     }
 }

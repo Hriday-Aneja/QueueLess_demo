@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reception Dashboard · QueueLess</title>
+    <link rel="stylesheet" href="css/reception.css">
+</head>
+
+<body class="reception-app-page" data-requires-auth="reception" hidden>
+
+    <header class="reception-topbar">
+        <div class="reception-topbar-brand">
+            <span class="auth-brand-mark">Q</span>
+            <span>QueueLess Reception</span>
+        </div>
+        <nav class="reception-nav">
+            <a href="dashboard.html" class="reception-nav-link" data-nav="dashboard">Dashboard</a>
+            <a href="queue.html" class="reception-nav-link" data-nav="queue">Queue</a>
+        </nav>
+        <div class="reception-topbar-user">
+            <span id="receptionUserName"></span>
+            <button type="button" id="logoutBtn" class="btn-secondary">Log Out</button>
+        </div>
+    </header>
+
+    <main class="reception-main">
+
+        <div class="dash-header">
+            <div>
+                <h1 class="dash-title">Reception Dashboard</h1>
+                <p class="dash-subtitle" id="dashDate">—</p>
+            </div>
+            <div class="dash-header-actions">
+                <label class="clinic-select-wrap">
+                    <span>Clinic</span>
+                    <select id="clinicSelect" aria-label="Select clinic"></select>
+                </label>
+                <span class="dash-updated" id="dashUpdated"></span>
+                <button type="button" class="btn-secondary" id="refreshBtn">⟳ Refresh</button>
+            </div>
+        </div>
+
+        <div class="dash-alert" id="dashError" role="alert" hidden>
+            <span id="dashErrorText">Something went wrong.</span>
+            <button type="button" class="btn-secondary" id="retryBtn">Retry</button>
+        </div>
+
+        <div class="dash-loading" id="dashLoading">
+            <div class="kpi-grid" id="kpiSkeleton">
+                <div class="kpi-card skeleton"></div>
+                <div class="kpi-card skeleton"></div>
+                <div class="kpi-card skeleton"></div>
+                <div class="kpi-card skeleton"></div>
+                <div class="kpi-card skeleton"></div>
+                <div class="kpi-card skeleton"></div>
+            </div>
+        </div>
+
+        <div id="dashContent" hidden>
+
+            <!-- KPI summary cards -->
+            <section class="kpi-grid" id="kpiGrid" aria-label="Queue summary"></section>
+
+            <!-- Department-wise queue view -->
+            <section class="panel">
+                <div class="panel-header">
+                    <h2 class="panel-title">Department-wise Queue</h2>
+                    <span class="panel-count" id="deptCount"></span>
+                </div>
+                <div class="dept-grid" id="deptGrid"></div>
+                <p class="empty-state" id="deptEmpty" hidden>No department activity for today.</p>
+            </section>
+
+            <!-- Doctor-wise queue view -->
+            <section class="panel">
+                <div class="panel-header">
+                    <h2 class="panel-title">Doctor-wise Queue</h2>
+                    <span class="panel-count" id="doctorCount"></span>
+                </div>
+                <div class="doctor-grid" id="doctorGrid"></div>
+                <p class="empty-state" id="doctorEmpty" hidden>No doctors with queue activity today.</p>
+            </section>
+
+        </div>
+    </main>
+
+    <!-- Doctor queue detail modal -->
+    <div class="modal-overlay" id="doctorModalOverlay" hidden>
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="doctorModalTitle">
+            <div class="modal-header">
+                <h2 id="doctorModalTitle">Doctor Queue</h2>
+                <button type="button" class="modal-close" id="doctorModalClose" aria-label="Close">&times;</button>
+            </div>
+            <div class="table-scroll">
+                <table class="data-table" id="doctorModalTable">
+                    <thead>
+                        <tr>
+                            <th>Token</th>
+                            <th>Patient</th>
+                            <th>Type</th>
+                            <th>Priority</th>
+                            <th>Status</th>
+                            <th>Position</th>
+                            <th>ETA</th>
+                        </tr>
+                    </thead>
+                    <tbody id="doctorModalTableBody"></tbody>
+                </table>
+                <p class="empty-state" id="doctorModalEmpty" hidden>No tokens for this doctor today.</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/reception-data.js"></script>
+    <script src="js/reception.js"></script>
+    <script src="js/reception-dashboard.js"></script>
+</body>
+
+</html>
