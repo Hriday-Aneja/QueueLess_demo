@@ -32,6 +32,7 @@ Request:
 { "email": "jane@example.com", "password": "secret123" }
 ```
 Response `data`: `{ "user_id": 12, "role": "patient", "name": "Jane Doe" }`
+For a doctor account, `data` also includes `"doctor_id"`. For a patient account, it also includes `"patient_id"`.
 
 ### POST /api/auth/logout
 No body. Response `data`: `{}`
@@ -122,14 +123,19 @@ Response `data`: `{ "status": "LATE" }`
 Request: `{ "token_id": 121 }`
 Response `data`: `{ "status": "WAITING", "queue_position": 6 }`
 
-### POST /api/queue/start-consultation  *(reception/admin only)*
-Moves a token from NEXT/ARRIVING/CHECKED_IN to CONSULTING. Needed for the first patient of the day, since `complete.php` only works on an already-CONSULTING token.
+### POST /api/queue/start-consultation  *(reception/admin, or the doctor themself)*
+Moves a token from NEXT/ARRIVING/CHECKED_IN to CONSULTING. Needed for the first patient of the day, since `complete.php` only works on an already-CONSULTING token. A doctor can only start consultations for their own tokens.
 Request: `{ "token_id": 118 }`
 Response `data`: `{ "status": "consulting" }`
 
-### POST /api/queue/complete  *(reception only)*
-Marks the current consultation done and promotes the next patients.
-Request: `{ "token_id": 118 }`  *(the token currently CONSULTING)*
+### POST /api/queue/notes  *(doctor only)*
+Saves consultation notes while the token is still CONSULTING (before completing). A doctor can only add notes to their own tokens.
+Request: `{ "token_id": 118, "notes": "Prescribed rest, follow-up in a week." }`
+Response `data`: `{ "saved": true }`
+
+### POST /api/queue/complete  *(reception/admin, or the doctor themself)*
+Marks the current consultation done and promotes the next patients. A doctor can only complete their own tokens. `notes` is optional and overwrites any notes saved via `/api/queue/notes` beforehand.
+Request: `{ "token_id": 118, "notes": "Optional final notes" }`
 Response `data`: `{ "completed_token": 41, "now_consulting": 42, "now_next": 43 }`
 
 ### GET /api/queue/reception-view?doctor_id=5&date=2026-09-25  *(reception/admin only)*
@@ -142,6 +148,26 @@ Response `data`:
   ]
 }
 ```
+
+---
+
+## Doctor  *(doctor only)*
+
+### GET /api/doctors/dashboard
+Always returns the logged-in doctor's own queue for today — there is no doctor_id or date input; it's taken from the session.
+Response `data`:
+```json
+{
+  "doctor": { "doctor_id": 5, "doctor_code": "DOC-005", "specialization": "General", "department_name": "General Medicine", "clinic_id": 1 },
+  "date": "2026-09-25",
+  "today_appointments": 12,
+  "current_patient": { "token_id": 118, "token_number": 41, "current_status": "consulting", "token_type": "appointment", "patient_name": "..." },
+  "next_patient": { "token_id": 119, "token_number": 42, "current_status": "next", "token_type": "walkin", "patient_name": "..." },
+  "waiting_count": 6,
+  "queue": [ /* same shape as reception-view's queue array */ ]
+}
+```
+`current_patient` and `next_patient` are `null` when nobody is in that state.
 
 ---
 

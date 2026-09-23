@@ -31,6 +31,11 @@ if ($user['role'] === ROLE_PATIENT) {
     if ($patient !== null) {
         $extra['patient_id'] = (int) $patient['patient_id'];
     }
+} elseif ($user['role'] === ROLE_DOCTOR) {
+    $doctor = Doctor::findByUserId((int) $user['user_id']);
+    if ($doctor !== null) {
+        $extra['doctor_id'] = (int) $doctor['doctor_id'];
+    }
 }
 
 Auth::login((int) $user['user_id'], $user['role'], $extra);

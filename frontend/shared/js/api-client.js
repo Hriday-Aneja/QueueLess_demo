@@ -68,8 +68,13 @@ const Api = {
   markNoShow: (tokenId) => apiPost('/queue/no-show.php', { token_id: tokenId }),
   markLate: (tokenId) => apiPost('/queue/late-arrival.php', { token_id: tokenId }),
   requeue: (tokenId) => apiPost('/queue/requeue.php', { token_id: tokenId }),
-  completeConsultation: (tokenId) => apiPost('/queue/complete.php', { token_id: tokenId }),
   receptionView: (doctorId, date) => apiGet(`/queue/reception-view.php?doctor_id=${doctorId}&date=${date}`),
+  startConsultation: (tokenId) => apiPost('/queue/start-consultation.php', { token_id: tokenId }),
+  saveConsultationNotes: (tokenId, notes) => apiPost('/queue/notes.php', { token_id: tokenId, notes }),
+  completeConsultation: (tokenId, notes) => apiPost('/queue/complete.php', { token_id: tokenId, notes }),
+
+  // ---- Doctor ----
+  doctorDashboard: () => apiGet('/doctors/dashboard.php'),
 
   // ---- Notifications ----
   listNotifications: () => apiGet('/notifications/list.php'),

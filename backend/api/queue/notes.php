@@ -5,10 +5,13 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     Response::error('Method not allowed.', 405);
 }
 
-Auth::requireRole(ROLE_RECEPTION, ROLE_ADMIN, ROLE_DOCTOR);
+Auth::requireRole(ROLE_DOCTOR);
 
 $input = Validator::jsonBody();
-$errors = Validator::validate($input, ['token_id' => 'required|int']);
+$errors = Validator::validate($input, [
+    'token_id' => 'required|int',
+    'notes'    => 'required|max:500',
+]);
 if ($errors) {
     Response::error('Please check the highlighted fields.', 422, $errors);
 }
@@ -19,13 +22,13 @@ if ($token === null) {
     Response::error('Token not found.', 404);
 }
 
-if (Auth::role() === ROLE_DOCTOR && (int) $token['doctor_id'] !== (int) Auth::extra('doctor_id')) {
+if ((int) $token['doctor_id'] !== (int) Auth::extra('doctor_id')) {
     Response::error('You are not authorized to act on this token.', 403);
 }
 
 try {
-    $result = QueueEngine::completeConsultation($tokenId, $input['notes'] ?? null);
-} catch (InvalidArgumentException | RuntimeException $e) {
+    $result = QueueEngine::updateConsultationNotes($tokenId, $input['notes']);
+} catch (RuntimeException $e) {
     Response::error($e->getMessage(), 409);
 }
 

@@ -50,6 +50,16 @@ class Appointment
         $stmt->execute(['id' => $appointmentId]);
     }
 
+    public static function countForDoctorAndDate(int $doctorId, string $date): int
+    {
+        $stmt = get_db_connection()->prepare(
+            "SELECT COUNT(*) AS n FROM appointments
+             WHERE doctor_id = :doctor_id AND appointment_date = :date AND status != 'cancelled'"
+        );
+        $stmt->execute(['doctor_id' => $doctorId, 'date' => $date]);
+        return (int) $stmt->fetch()['n'];
+    }
+
     public static function listForPatient(int $patientId): array
     {
         $stmt = get_db_connection()->prepare(

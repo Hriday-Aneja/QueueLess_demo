@@ -12,6 +12,16 @@ class Consultation
         return (int) get_db_connection()->lastInsertId();
     }
 
+    public static function updateNotes(int $tokenId, string $notes): bool
+    {
+        $stmt = get_db_connection()->prepare(
+            "UPDATE consultations SET notes = :notes
+             WHERE token_id = :token_id AND consultation_status = 'in_progress'"
+        );
+        $stmt->execute(['notes' => $notes, 'token_id' => $tokenId]);
+        return $stmt->rowCount() > 0;
+    }
+
     public static function completeByTokenId(int $tokenId, ?string $notes = null): void
     {
         $stmt = get_db_connection()->prepare(

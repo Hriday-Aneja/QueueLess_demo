@@ -40,6 +40,23 @@ class Doctor
         return $stmt->fetchAll();
     }
 
+    /**
+     * Used at login to attach the doctor's own doctor_id to their
+     * session. Required for the Doctor Interface.
+     */
+    public static function findByUserId(int $userId): ?array
+    {
+        $stmt = get_db_connection()->prepare(
+            'SELECT d.*, dep.department_name, dep.clinic_id
+             FROM doctors d
+             JOIN departments dep ON dep.department_id = d.department_id
+             WHERE d.user_id = :user_id'
+        );
+        $stmt->execute(['user_id' => $userId]);
+        $row = $stmt->fetch();
+        return $row ?: null;
+    }
+
     /* ---------------------------------------------------------
      * Admin management (Phase 3) — additive only, nothing above
      * this line is changed so the Queue Engine / booking flow

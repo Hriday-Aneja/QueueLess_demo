@@ -47,6 +47,56 @@ class QueueEngine
         return ['queue' => Token::listForDoctorQueue($doctorId, $date)];
     }
 
+    /**
+     * Everything the doctor dashboard needs in one call: profile,
+     * today's appointment count, current/next patient, waiting count,
+     * and the full live queue. doctorId always comes from the doctor's
+     * own session (Auth::extra('doctor_id')) at the API layer — never
+     * from client input — so a doctor can only ever see their own queue.
+     */
+    public static function doctorDashboard(int $doctorId, string $date): array
+    {
+        $doctor = Doctor::findById($doctorId);
+        if ($doctor === null) {
+            throw new RuntimeException('Unknown doctor.');
+        }
+
+        self::sweepAndPromote($doctorId, $date);
+
+        $queue = Token::listForDoctorQueue($doctorId, $date);
+
+        $currentPatient = null;
+        $nextPatient = null;
+        $waitingCount = 0;
+        $waitingStatuses = [QueueStateMachine::WAITING, QueueStateMachine::ARRIVING, QueueStateMachine::CHECKED_IN];
+
+        foreach ($queue as $row) {
+            if ($row['current_status'] === QueueStateMachine::CONSULTING) {
+                $currentPatient = $row;
+            } elseif ($row['current_status'] === QueueStateMachine::NEXT) {
+                $nextPatient = $row;
+            } elseif (in_array($row['current_status'], $waitingStatuses, true)) {
+                $waitingCount++;
+            }
+        }
+
+        return [
+            'doctor' => [
+                'doctor_id'        => (int) $doctor['doctor_id'],
+                'doctor_code'      => $doctor['doctor_code'],
+                'specialization'   => $doctor['specialization'],
+                'department_name'  => $doctor['department_name'],
+                'clinic_id'        => (int) $doctor['clinic_id'],
+            ],
+            'date'               => $date,
+            'today_appointments' => Appointment::countForDoctorAndDate($doctorId, $date),
+            'current_patient'    => $currentPatient,
+            'next_patient'       => $nextPatient,
+            'waiting_count'      => $waitingCount,
+            'queue'              => $queue,
+        ];
+    }
+
     // ---- Patient-facing actions -----------------------------------------
 
     public static function onMyWay(int $tokenId): array
@@ -123,18 +173,38 @@ class QueueEngine
     }
 
     /**
+     * Saves consultation notes while the patient is still CONSULTING
+     * (before completeConsultation() is called). Does not touch queue
+     * status or ordering — purely a data write.
+     */
+    public static function updateConsultationNotes(int $tokenId, string $notes): array
+    {
+        $status = QueueStatus::findByTokenId($tokenId);
+        if ($status === null || $status['current_status'] !== QueueStateMachine::CONSULTING) {
+            throw new RuntimeException('Notes can only be saved while the consultation is in progress.');
+        }
+
+        $saved = Consultation::updateNotes($tokenId, $notes);
+        if (!$saved) {
+            throw new RuntimeException('No in-progress consultation record found for this token.');
+        }
+
+        return ['saved' => true];
+    }
+
+    /**
      * Completes the current consultation and, per spec, immediately
      * promotes the patient who was NEXT into CONSULTING, then promotes
      * a new NEXT from the remaining queue.
      */
-    public static function completeConsultation(int $tokenId): array
+    public static function completeConsultation(int $tokenId, ?string $notes = null): array
     {
         $token = self::requireToken($tokenId);
         $doctorId = (int) $token['doctor_id'];
         $date = $token['token_date'];
 
         QueueStatus::transition($tokenId, QueueStateMachine::COMPLETED);
-        Consultation::completeByTokenId($tokenId);
+        Consultation::completeByTokenId($tokenId, $notes);
         Token::markServed($tokenId);
 
         if (!empty($token['appointment_id'])) {

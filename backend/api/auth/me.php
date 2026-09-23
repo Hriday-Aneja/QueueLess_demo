@@ -20,6 +20,11 @@ if ($user['role'] === ROLE_PATIENT) {
     if ($patientId !== null) {
         $extra['patient_id'] = $patientId;
     }
+} elseif ($user['role'] === ROLE_DOCTOR) {
+    $doctorId = Auth::extra('doctor_id');
+    if ($doctorId !== null) {
+        $extra['doctor_id'] = $doctorId;
+    }
 }
 
 Response::success([

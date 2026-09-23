@@ -1,4 +1,10 @@
 <?php
+/**
+ * Location: backend/config/config.php
+ *
+ * Global, non-secret configuration for QueueLess.
+ * DB credentials do NOT go here — see config.local.php.
+ */
 
 // ---- Timezone ---------------------------------------------------------
 date_default_timezone_set('Asia/Kolkata');
@@ -23,7 +29,7 @@ define('SESSION_LIFETIME_SECONDS', 60 * 60 * 8); // 8 hours
 define('ROLE_PATIENT', 'patient');
 define('ROLE_RECEPTION', 'reception');
 define('ROLE_ADMIN', 'admin');
-define('ROLE_DOCTOR', 'doctor'); // matches seed.sql's doctor user rows
+define('ROLE_DOCTOR', 'doctor');
 
 // ---- Environment ----------------------------------------------------------
 // Set to false in production so PHP errors are never shown to the browser.
