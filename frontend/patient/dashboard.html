@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>QueueLess — Dashboard</title>
+<meta name="description" content="Book appointments, check in for walk-ins, and track your live queue position." />
+<link rel="stylesheet" href="../shared/css/base.css" />
+<link rel="stylesheet" href="css/patient.css" />
+</head>
+<body class="patient-app">
+<a class="skip-link" href="#main-content">Skip to main content</a>
+
+<div class="app-shell">
+
+  <!-- Desktop sidebar -->
+  <nav class="app-sidebar" aria-label="Primary">
+    <div class="brand-mark"><span class="mark-dot"></span> QueueLess</div>
+
+    <div class="side-nav" id="sidebar-nav">
+      <a href="#dashboard" data-view="dashboard" aria-current="page">
+        <svg class="icon" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>
+        Dashboard
+      </a>
+      <a href="#clinics" data-view="clinics">
+        <svg class="icon" viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="14" rx="2"/><path d="M9 21V11h6v10"/><path d="M9 3h6v4H9z"/></svg>
+        Clinics
+      </a>
+      <a href="#appointments" data-view="appointments">
+        <svg class="icon" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg>
+        Appointments
+        <span class="nav-badge" id="nav-badge-appointments" hidden>0</span>
+      </a>
+      <a href="#livequeue" data-view="livequeue">
+        <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+        Live Queue
+      </a>
+      <a href="#history" data-view="history">
+        <svg class="icon" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/><path d="M12 7v5l4 2"/></svg>
+        History
+      </a>
+      <a href="#notifications" data-view="notifications">
+        <svg class="icon" viewBox="0 0 24 24"><path d="M6 8a6 6 0 1 1 12 0c0 5 2 6 2 6H4s2-1 2-6"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>
+        Notifications
+        <span class="nav-badge" id="nav-badge-notifications" hidden>0</span>
+      </a>
+      <a href="#profile" data-view="profile">
+        <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6"/></svg>
+        Profile
+      </a>
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="sidebar-user">
+        <span class="avatar" id="sidebar-avatar">--</span>
+        <div>
+          <div class="user-name" id="sidebar-username">Patient</div>
+          <div class="user-role">Patient account</div>
+        </div>
+      </div>
+      <button type="button" class="btn btn-ghost btn-block btn-sm" id="sidebar-logout">
+        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+        Log out
+      </button>
+    </div>
+  </nav>
+
+  <div class="app-main">
+
+    <!-- Mobile top bar -->
+    <header class="app-topbar">
+      <button type="button" class="icon-btn" id="drawer-open-btn" aria-label="Open menu" aria-expanded="false" aria-controls="mobile-drawer">
+        <svg class="icon" viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      </button>
+      <span class="topbar-title" id="topbar-title">Dashboard</span>
+      <button type="button" class="icon-btn" id="topbar-notif-btn" aria-label="Notifications">
+        <svg class="icon" viewBox="0 0 24 24"><path d="M6 8a6 6 0 1 1 12 0c0 5 2 6 2 6H4s2-1 2-6"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>
+        <span class="dot-flag" id="topbar-notif-dot" hidden></span>
+      </button>
+    </header>
+
+    <!-- Mobile drawer -->
+    <div class="mobile-drawer-backdrop" id="drawer-backdrop"></div>
+    <nav class="mobile-drawer" id="mobile-drawer" aria-label="Primary" aria-hidden="true">
+      <button type="button" class="icon-btn drawer-close" id="drawer-close-btn" aria-label="Close menu">
+        <svg class="icon" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+      <div class="brand-mark"><span class="mark-dot"></span> QueueLess</div>
+      <div class="side-nav" id="drawer-nav">
+        <a href="#dashboard" data-view="dashboard">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>
+          Dashboard
+        </a>
+        <a href="#clinics" data-view="clinics">
+          <svg class="icon" viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="14" rx="2"/><path d="M9 21V11h6v10"/><path d="M9 3h6v4H9z"/></svg>
+          Clinics
+        </a>
+        <a href="#appointments" data-view="appointments">
+          <svg class="icon" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg>
+          Appointments
+        </a>
+        <a href="#livequeue" data-view="livequeue">
+          <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+          Live Queue
+        </a>
+        <a href="#history" data-view="history">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/><path d="M12 7v5l4 2"/></svg>
+          History
+        </a>
+        <a href="#notifications" data-view="notifications">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M6 8a6 6 0 1 1 12 0c0 5 2 6 2 6H4s2-1 2-6"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>
+          Notifications
+        </a>
+        <a href="#profile" data-view="profile">
+          <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6"/></svg>
+          Profile
+        </a>
+      </div>
+      <button type="button" class="btn btn-ghost btn-block btn-sm" id="drawer-logout" style="margin-top:auto;">
+        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+        Log out
+      </button>
+    </nav>
+
+    <!-- Desktop header -->
+    <header class="app-desktop-header">
+      <h1 id="desktop-title">Dashboard</h1>
+      <div class="header-actions">
+        <button type="button" class="icon-btn" id="desktop-notif-btn" aria-label="Notifications">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M6 8a6 6 0 1 1 12 0c0 5 2 6 2 6H4s2-1 2-6"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>
+          <span class="dot-flag" id="desktop-notif-dot" hidden></span>
+        </button>
+      </div>
+    </header>
+
+    <main id="main-content" class="app-content">
+
+      <!-- ============ DASHBOARD ============ -->
+      <section class="view is-active" id="view-dashboard" data-view-section="dashboard" aria-labelledby="view-dashboard-title">
+        <h2 id="view-dashboard-title" class="visually-hidden">Dashboard</h2>
+
+        <div id="dashboard-status-slot"></div>
+
+        <div class="quick-actions">
+          <button type="button" class="quick-action" data-nav="clinics">
+            <span class="qa-icon"><svg class="icon" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></span>
+            <span class="qa-label">Book Appointment</span>
+            <span class="qa-sub">Find a clinic &amp; doctor</span>
+          </button>
+          <button type="button" class="quick-action qa-accent" data-nav="walkin">
+            <span class="qa-icon"><svg class="icon" viewBox="0 0 24 24"><path d="M12 2v6M12 22v-6M4.9 4.9l4.2 4.2M14.9 14.9l4.2 4.2M2 12h6M16 12h6M4.9 19.1l4.2-4.2M14.9 9.1l4.2-4.2"/></svg></span>
+            <span class="qa-label">Walk-in Check-In</span>
+            <span class="qa-sub">Get a token now</span>
+          </button>
+          <button type="button" class="quick-action" data-nav="token">
+            <span class="qa-icon"><svg class="icon" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 10h8M8 14h5"/></svg></span>
+            <span class="qa-label">My Token</span>
+            <span class="qa-sub">View current token</span>
+          </button>
+          <button type="button" class="quick-action" data-nav="livequeue">
+            <span class="qa-icon"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></span>
+            <span class="qa-label">Live Queue</span>
+            <span class="qa-sub">Track your position</span>
+          </button>
+        </div>
+
+        <div class="dash-section-title">
+          <h3>Upcoming appointments</h3>
+          <button type="button" data-nav="appointments">See all</button>
+        </div>
+        <div id="dashboard-upcoming-list" class="list-stack" aria-live="polite"></div>
+
+        <div class="dash-section-title">
+          <h3>Recent notifications</h3>
+          <button type="button" data-nav="notifications">See all</button>
+        </div>
+        <div id="dashboard-notif-list" class="list-stack" aria-live="polite"></div>
+      </section>
+
+      <!-- ============ CLINICS ============ -->
+      <section class="view" id="view-clinics" data-view-section="clinics" aria-labelledby="view-clinics-title">
+        <button type="button" class="back-btn" data-nav="dashboard">
+          <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg> Dashboard
+        </button>
+        <div class="view-header">
+          <h2 id="view-clinics-title">Find a clinic</h2>
+          <p>Choose a clinic to see available doctors.</p>
+        </div>
+
+        <div class="filter-bar">
+          <div class="search-input">
+            <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+            <input type="search" id="clinic-search" placeholder="Search clinics" aria-label="Search clinics" />
+          </div>
+        </div>
+        <div class="chip-scroll" id="clinic-filter-chips" role="group" aria-label="Filter clinics by department"></div>
+
+        <div id="clinics-list" class="list-stack" style="margin-top:14px;" aria-live="polite" aria-busy="true"></div>
+      </section>
+
+      <!-- ============ DOCTORS ============ -->
+      <section class="view" id="view-doctors" data-view-section="doctors" aria-labelledby="view-doctors-title">
+        <button type="button" class="back-btn" data-nav="clinics">
+          <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg> Clinics
+        </button>
+        <div class="view-header">
+          <h2 id="view-doctors-title">Doctors at <span id="doctors-clinic-name">—</span></h2>
+          <p>Choose a doctor to book an appointment.</p>
+        </div>
+        <div id="doctors-list" class="list-stack" aria-live="polite" aria-busy="true"></div>
+      </section>
+
+      <!-- ============ BOOKING ============ -->
+      <section class="view" id="view-booking" data-view-section="booking" aria-labelledby="view-booking-title">
+        <button type="button" class="back-btn" data-nav="doctors">
+          <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg> Doctors
+        </button>
+        <div class="view-header">
+          <h2 id="view-booking-title">Book with <span id="booking-doctor-name">—</span></h2>
+          <p id="booking-doctor-meta">—</p>
+        </div>
+
+        <h3 style="font-size:13.5px; margin-bottom:10px;">Select a date</h3>
+        <div class="date-scroll" id="booking-date-scroll" role="group" aria-label="Select appointment date"></div>
+
+        <h3 style="font-size:13.5px; margin-bottom:10px;">Select a time</h3>
+        <div class="time-grid" id="booking-time-grid" role="group" aria-label="Select appointment time" aria-busy="true"></div>
+
+        <div class="field">
+          <label for="booking-reason">Reason for visit (optional)</label>
+          <textarea id="booking-reason" placeholder="E.g. follow-up, fever, routine checkup"></textarea>
+        </div>
+
+        <button type="button" class="btn btn-primary btn-block" id="booking-confirm-btn" disabled>
+          Confirm Booking
+        </button>
+      </section>
+
+      <!-- ============ CONFIRMATION ============ -->
+      <section class="view" id="view-confirmation" data-view-section="confirmation" aria-labelledby="view-confirmation-title">
+        <div class="confirm-hero">
+          <span class="confirm-icon"><svg class="icon" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></span>
+          <h2 id="view-confirmation-title">Appointment confirmed</h2>
+          <p id="confirmation-sub">You're all set. We'll send a reminder before your visit.</p>
+        </div>
+
+        <div class="confirm-token">
+          <div class="ct-label">Appointment reference</div>
+          <div class="ct-value" id="confirmation-ref">—</div>
+        </div>
+
+        <div class="booking-summary" id="confirmation-summary"></div>
+
+        <div class="confirm-actions">
+          <button type="button" class="btn btn-primary" data-nav="appointments">View My Appointments</button>
+          <button type="button" class="btn btn-secondary" data-nav="dashboard">Back to Dashboard</button>
+        </div>
+      </section>
+
+      <!-- ============ WALK-IN ============ -->
+      <section class="view" id="view-walkin" data-view-section="walkin" aria-labelledby="view-walkin-title">
+        <button type="button" class="back-btn" data-nav="dashboard">
+          <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg> Dashboard
+        </button>
+        <div class="view-header">
+          <h2 id="view-walkin-title">Walk-in check-in</h2>
+          <p>Pick a clinic and department to get a token — no appointment needed.</p>
+        </div>
+
+        <div class="field" id="walkin-clinic-field">
+          <label for="walkin-clinic">Clinic</label>
+          <select id="walkin-clinic" aria-describedby="walkin-clinic-error"></select>
+          <span class="field-error" id="walkin-clinic-error">Choose a clinic.</span>
+        </div>
+
+        <div class="field" id="walkin-department-field">
+          <label for="walkin-department">Department</label>
+          <select id="walkin-department" aria-describedby="walkin-department-error"></select>
+          <span class="field-error" id="walkin-department-error">Choose a department.</span>
+        </div>
+
+        <button type="button" class="btn btn-accent btn-block" id="walkin-submit-btn">
+          Get My Token
+        </button>
+      </section>
+
+      <!-- ============ TOKEN ============ -->
+      <section class="view" id="view-token" data-view-section="token" aria-labelledby="view-token-title">
+        <button type="button" class="back-btn" data-nav="dashboard">
+          <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg> Dashboard
+        </button>
+        <div class="dash-hero dash-hero-compact">
+          <h2 class="hero-heading hero-heading-md" id="view-token-title">Your token,<br />front and center.</h2>
+          <p class="hero-sub">Here's where things stand right now.</p>
+        </div>
+        <div id="token-content" aria-live="polite" aria-busy="true"></div>
+      </section>
+
+      <!-- ============ LIVE QUEUE ============ -->
+      <section class="view" id="view-livequeue" data-view-section="livequeue" aria-labelledby="view-livequeue-title">
+        <button type="button" class="back-btn" data-nav="dashboard">
+          <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg> Dashboard
+        </button>
+        <div class="dash-hero dash-hero-compact">
+          <span class="status-pill tone-blue">
+            <span class="status-pill-dot"></span>
+            Live Queue
+          </span>
+          <h2 class="hero-heading hero-heading-md" id="view-livequeue-title">Your turn is<br />getting closer.</h2>
+          <p class="hero-sub">Updates automatically as the queue moves.</p>
+        </div>
+        <div id="livequeue-content" aria-live="polite" aria-busy="true"></div>
+      </section>
+
+      <!-- ============ APPOINTMENTS ============ -->
+      <section class="view" id="view-appointments" data-view-section="appointments" aria-labelledby="view-appointments-title">
+        <div class="view-header">
+          <h2 id="view-appointments-title">My appointments</h2>
+          <p>Upcoming visits you've booked.</p>
+        </div>
+        <div id="appointments-list" class="list-stack" aria-live="polite" aria-busy="true"></div>
+      </section>
+
+      <!-- ============ HISTORY ============ -->
+      <section class="view" id="view-history" data-view-section="history" aria-labelledby="view-history-title">
+        <div class="view-header">
+          <h2 id="view-history-title">Visit history</h2>
+          <p>Your past appointments and completed visits.</p>
+        </div>
+        <div id="history-list" class="list-stack" aria-live="polite" aria-busy="true"></div>
+      </section>
+
+      <!-- ============ NOTIFICATIONS ============ -->
+      <section class="view" id="view-notifications" data-view-section="notifications" aria-labelledby="view-notifications-title">
+        <div class="view-header" style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
+          <div>
+            <h2 id="view-notifications-title">Notifications</h2>
+            <p>Reminders and queue updates.</p>
+          </div>
+          <button type="button" class="btn btn-ghost btn-sm" id="notif-mark-all-btn">Mark all read</button>
+        </div>
+        <div id="notifications-list" class="list-stack" aria-live="polite" aria-busy="true"></div>
+      </section>
+
+      <!-- ============ PROFILE ============ -->
+      <section class="view" id="view-profile" data-view-section="profile" aria-labelledby="view-profile-title">
+        <h2 id="view-profile-title" class="visually-hidden">Profile</h2>
+        <div class="profile-header">
+          <span class="avatar" id="profile-avatar">--</span>
+          <div>
+            <h2 id="profile-name">Patient</h2>
+            <p id="profile-email">—</p>
+          </div>
+        </div>
+
+        <form id="profile-form" class="profile-fields" novalidate>
+          <div class="field">
+            <label for="profile-field-name">Full name</label>
+            <input type="text" id="profile-field-name" name="name" />
+          </div>
+          <div class="field">
+            <label for="profile-field-email">Email</label>
+            <input type="email" id="profile-field-email" name="email" disabled />
+          </div>
+          <div class="field">
+            <label for="profile-field-phone">Phone number</label>
+            <input type="tel" id="profile-field-phone" name="phone" />
+          </div>
+          <button type="submit" class="btn btn-primary btn-block">Save Changes</button>
+        </form>
+
+        <div class="profile-actions">
+          <button type="button" class="btn btn-danger-outline btn-block" id="profile-logout-btn">
+            <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+            Log out
+          </button>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<!-- Bottom tab bar (mobile) -->
+<nav class="bottom-tabbar" aria-label="Primary">
+  <a href="#dashboard" data-view="dashboard" aria-current="page">
+    <svg class="icon" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>
+    Home
+  </a>
+  <a href="#appointments" data-view="appointments">
+    <svg class="icon" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg>
+    Visits
+  </a>
+  <a href="#livequeue" data-view="livequeue">
+    <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+    Queue
+  </a>
+  <a href="#notifications" data-view="notifications">
+    <svg class="icon" viewBox="0 0 24 24"><path d="M6 8a6 6 0 1 1 12 0c0 5 2 6 2 6H4s2-1 2-6"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>
+    Alerts
+  </a>
+  <a href="#profile" data-view="profile">
+    <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6"/></svg>
+    Profile
+  </a>
+</nav>
+
+<!-- Cancellation confirm modal -->
+<div class="modal-backdrop" id="cancel-modal-backdrop">
+  <div class="modal-sheet" role="dialog" aria-modal="true" aria-labelledby="cancel-modal-title" id="cancel-modal">
+    <h3 id="cancel-modal-title">Cancel this appointment?</h3>
+    <p id="cancel-modal-body">This will free up the slot for another patient. This can't be undone.</p>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-secondary" id="cancel-modal-dismiss">Keep Appointment</button>
+      <button type="button" class="btn btn-danger" id="cancel-modal-confirm">Cancel Appointment</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-region" aria-live="polite" aria-atomic="true"></div>
+
+<script src="../shared/js/api-client.js"></script>
+<script src="js/patient.js" data-page="dashboard"></script>
+</body>
+</html>

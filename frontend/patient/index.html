@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>QueueLess — Sign In</title>
+<meta name="description" content="Sign in or register for QueueLess to book appointments and track your place in line." />
+<link rel="stylesheet" href="../shared/css/base.css" />
+<link rel="stylesheet" href="css/patient.css" />
+</head>
+<body class="patient-app">
+<a class="skip-link" href="#auth-main">Skip to sign in form</a>
+
+<main id="auth-main" class="auth-shell">
+  <!-- Brand pane (desktop only) -->
+  <section class="auth-brandpane" aria-hidden="true">
+    <div class="floating-shape shape-pink-sphere" style="top:-30px; right:8%;"></div>
+    <div class="floating-shape shape-purple-cube" style="top:220px; right:22%;"></div>
+    <div class="floating-shape shape-blue-sphere" style="bottom:120px; left:6%;"></div>
+    <div class="auth-brand-mark">
+      <span class="mark-dot"></span>
+      QueueLess
+    </div>
+    <div class="auth-brand-copy">
+      <h1>Your queue.<br /><span class="accent-purple">Your time.</span></h1>
+      <p>Skip the waiting room and know exactly when your turn is approaching — book appointments, check in for walk-ins, and track your live position from your phone.</p>
+      <div class="auth-token-preview">
+        <div>
+          <div class="token-no">A-014</div>
+        </div>
+        <div class="token-meta">3 patients ahead<br />Est. wait 12 min</div>
+      </div>
+    </div>
+    <div></div>
+  </section>
+
+  <!-- Form pane -->
+  <section class="auth-formpane">
+    <div class="auth-form-wrap">
+      <div class="auth-mobile-mark">
+        <span class="mark-dot"></span>
+        QueueLess
+      </div>
+
+      <div class="auth-tabs" role="tablist" aria-label="Choose sign in or register">
+        <button type="button" class="auth-tab" id="tab-login" role="tab" aria-selected="true" aria-controls="panel-login">Sign In</button>
+        <button type="button" class="auth-tab" id="tab-register" role="tab" aria-selected="false" aria-controls="panel-register">Register</button>
+      </div>
+
+      <div id="auth-alert" class="field-error" role="alert" aria-live="assertive" style="display:none; margin-bottom:14px;"></div>
+
+      <!-- Login panel -->
+      <div id="panel-login" class="auth-panel" role="tabpanel" aria-labelledby="tab-login">
+        <h2>Welcome back</h2>
+        <p class="auth-sub">Sign in to view your appointments and queue status.</p>
+
+        <form id="login-form" novalidate>
+          <div class="field" id="login-email-field">
+            <label for="login-email">Email or phone</label>
+            <input type="text" id="login-email" name="email" autocomplete="username" inputmode="email" aria-describedby="login-email-error" required />
+            <span class="field-error" id="login-email-error">Enter your email or phone number.</span>
+          </div>
+
+          <div class="field" id="login-password-field">
+            <label for="login-password">Password</label>
+            <input type="password" id="login-password" name="password" autocomplete="current-password" aria-describedby="login-password-error" required />
+            <span class="field-error" id="login-password-error">Enter your password.</span>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-block" id="login-submit">
+            <span class="btn-label">Sign In</span>
+          </button>
+        </form>
+
+        <p class="auth-form-note">
+          New to QueueLess? <button type="button" id="goto-register">Create an account</button>
+        </p>
+
+        <div class="auth-demo-note">Demo mode: any email/password of 6+ characters signs you in.</div>
+      </div>
+
+      <!-- Register panel -->
+      <div id="panel-register" class="auth-panel" role="tabpanel" aria-labelledby="tab-register" hidden>
+        <h2>Create your account</h2>
+        <p class="auth-sub">It only takes a minute — you'll be booking in no time.</p>
+
+        <form id="register-form" novalidate>
+          <div class="field" id="reg-name-field">
+            <label for="reg-name">Full name</label>
+            <input type="text" id="reg-name" name="name" autocomplete="name" aria-describedby="reg-name-error" required />
+            <span class="field-error" id="reg-name-error">Enter your full name.</span>
+          </div>
+
+          <div class="field" id="reg-email-field">
+            <label for="reg-email">Email</label>
+            <input type="email" id="reg-email" name="email" autocomplete="email" aria-describedby="reg-email-error" required />
+            <span class="field-error" id="reg-email-error">Enter a valid email address.</span>
+          </div>
+
+          <div class="field" id="reg-phone-field">
+            <label for="reg-phone">Phone number</label>
+            <input type="tel" id="reg-phone" name="phone" autocomplete="tel" aria-describedby="reg-phone-error" required />
+            <span class="field-error" id="reg-phone-error">Enter a valid phone number.</span>
+          </div>
+
+          <div class="field" id="reg-password-field">
+            <label for="reg-password">Password</label>
+            <input type="password" id="reg-password" name="password" autocomplete="new-password" aria-describedby="reg-password-error reg-password-hint" required />
+            <span class="hint" id="reg-password-hint">At least 6 characters.</span>
+            <span class="field-error" id="reg-password-error">Password must be at least 6 characters.</span>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-block" id="register-submit">
+            <span class="btn-label">Create Account</span>
+          </button>
+        </form>
+
+        <p class="auth-form-note">
+          Already registered? <button type="button" id="goto-login">Sign in</button>
+        </p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div id="toast-region" aria-live="polite" aria-atomic="true"></div>
+
+<script src="../shared/js/api-client.js"></script>
+<script src="js/patient.js" data-page="auth"></script>
+</body>
+</html>
