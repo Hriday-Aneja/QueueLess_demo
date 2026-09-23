@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Walk-In · QueueLess Reception</title>
+    <link rel="stylesheet" href="css/reception.css">
+</head>
+
+<body class="reception-app-page" data-requires-auth="reception" hidden>
+
+    <header class="reception-topbar">
+        <div class="reception-topbar-brand">
+            <span class="auth-brand-mark">Q</span>
+            <span>QueueLess Reception</span>
+        </div>
+        <nav class="reception-nav">
+            <a href="dashboard.html" class="reception-nav-link" data-nav="dashboard">Dashboard</a>
+            <a href="queue.html" class="reception-nav-link" data-nav="queue">Queue</a>
+            <a href="patients.html" class="reception-nav-link" data-nav="patients">Patients</a>
+            <a href="walkin.html" class="reception-nav-link" data-nav="walkin">Walk-In</a>
+        </nav>
+        <div class="reception-topbar-user">
+            <span id="receptionUserName"></span>
+            <button type="button" id="logoutBtn" class="btn-secondary">Log Out</button>
+        </div>
+    </header>
+
+    <main class="reception-main">
+
+        <div class="dash-header">
+            <div>
+                <h1 class="dash-title">Walk-In Registration</h1>
+                <p class="dash-subtitle" id="pageDate">—</p>
+            </div>
+        </div>
+
+        <!-- Error state -->
+        <div class="dash-alert" id="pageError" role="alert" hidden>
+            <span id="pageErrorText">Something went wrong.</span>
+            <button type="button" class="btn-secondary" id="pageErrorClose">Dismiss</button>
+        </div>
+
+        <div class="walkin-layout">
+
+            <!-- Left column: form -->
+            <div>
+                <section class="panel">
+                    <div class="panel-header">
+                        <h2 class="panel-title">Patient &amp; Visit Details</h2>
+                    </div>
+
+                    <form id="walkinForm" novalidate autocomplete="off">
+
+                        <div class="segmented" id="patientMode" role="group" aria-label="Patient type">
+                            <button type="button" class="active" data-mode="new">New patient</button>
+                            <button type="button" data-mode="existing">Existing patient</button>
+                        </div>
+
+                        <!-- Existing patient: search + select -->
+                        <div id="existingBlock" hidden>
+                            <p class="notice" id="searchUnavailable" hidden>
+                                Existing-patient search isn’t available on this server yet.
+                            </p>
+
+                            <div class="selected-patient" id="selectedPatient" hidden>
+                                <div>
+                                    <p class="selected-name" id="selectedName"></p>
+                                    <p class="selected-meta" id="selectedMeta"></p>
+                                </div>
+                                <button type="button" class="btn-secondary" id="clearPatient">Change</button>
+                            </div>
+
+                            <div id="patientSearchBlock">
+                                <div class="search-row">
+                                    <input type="search" class="search-input" id="patientSearchInput"
+                                        placeholder="Name, phone or patient code" aria-label="Search existing patient"
+                                        maxlength="120">
+                                    <button type="button" class="btn-secondary" id="patientSearchBtn">Search</button>
+                                </div>
+                                <div class="patient-list" id="patientResults"></div>
+                                <p class="empty-state" id="patientNoResults" hidden>No patients matched your search.</p>
+                            </div>
+
+                            <p class="notice" id="linkWarning" role="alert" hidden></p>
+                            <label class="check-row" id="linkConfirmRow" hidden>
+                                <input type="checkbox" id="linkConfirm">
+                                <span>I understand this will create a new patient record.</span>
+                            </label>
+                        </div>
+
+                        <!-- New patient: manual entry -->
+                        <div id="newBlock">
+                            <div class="form-grid">
+                                <div class="form-field">
+                                    <label class="form-label" for="patientName">Patient name *</label>
+                                    <input type="text" id="patientName" maxlength="120" placeholder="Full name">
+                                    <span class="field-error" data-error-for="patient_name"></span>
+                                </div>
+                                <div class="form-field">
+                                    <label class="form-label" for="patientPhone">Phone (optional)</label>
+                                    <input type="tel" id="patientPhone" maxlength="20"
+                                        placeholder="e.g. +91 98765 43210">
+                                    <span class="field-error" data-error-for="patient_phone"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-grid">
+                            <div class="form-field full">
+                                <label class="form-label" for="clinicSelect">Clinic</label>
+                                <select id="clinicSelect"></select>
+                            </div>
+                            <div class="form-field">
+                                <label class="form-label" for="departmentSelect">Department *</label>
+                                <select id="departmentSelect" disabled>
+                                    <option value="">Loading…</option>
+                                </select>
+                                <span class="field-error" data-error-for="department"></span>
+                            </div>
+                            <div class="form-field" id="fieldDoctor">
+                                <label class="form-label" for="doctorSelect">Doctor *</label>
+                                <select id="doctorSelect" disabled>
+                                    <option value="">Select doctor…</option>
+                                </select>
+                                <span class="field-error" data-error-for="doctor_id"></span>
+                            </div>
+                            <div class="form-field">
+                                <label class="form-label" for="prioritySelect">Priority</label>
+                                <select id="prioritySelect">
+                                    <option value="normal" selected>Normal</option>
+                                    <option value="emergency">Emergency</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn-primary" id="submitBtn" disabled>Generate token</button>
+                            <button type="button" class="btn-secondary" id="resetBtn">Reset</button>
+                        </div>
+                    </form>
+                </section>
+            </div>
+
+            <!-- Right column: live queue preview + ticket -->
+            <div>
+                <section class="panel">
+                    <div class="panel-header">
+                        <h2 class="panel-title">Live Queue</h2>
+                    </div>
+
+                    <p class="empty-state" id="previewEmpty">Select a doctor to see their current queue.</p>
+
+                    <div id="previewBody" hidden>
+                        <p class="preview-doctor" id="previewDoctor"></p>
+                        <div class="doctor-card-tokens">
+                            <div class="token-pill current">
+                                <span class="token-pill-label">Current</span>
+                                <span class="token-pill-value none" id="previewCurrent">—</span>
+                            </div>
+                            <div class="token-pill next">
+                                <span class="token-pill-label">Next</span>
+                                <span class="token-pill-value none" id="previewNext">—</span>
+                            </div>
+                        </div>
+                        <p class="preview-foot"><strong id="previewWaiting">0</strong> waiting</p>
+                    </div>
+                </section>
+
+                <section class="panel ticket-panel" id="ticketPanel" aria-live="polite" hidden>
+                    <div class="ticket-head">
+                        <h2 class="panel-title">Token issued</h2>
+                        <span class="badge badge-waiting" id="ticketStatus">waiting</span>
+                    </div>
+                    <p class="ticket-number" id="ticketNumber">#—</p>
+                    <p class="ticket-eta" id="ticketEta">—</p>
+                    <ul class="ticket-detail" id="ticketDetail"></ul>
+                    <p class="notice" id="ticketWarning" role="alert" hidden></p>
+                    <button type="button" class="btn-primary" id="newWalkinBtn">Register another walk-in</button>
+                </section>
+            </div>
+
+        </div>
+    </main>
+
+    <div class="toast-stack" id="toastStack" aria-live="polite"></div>
+
+<script src="js/reception-data.js"></script>
+<script src="js/reception.js"></script>
+<script src="js/reception-walkin.js"></script>
+</body>
+
+</html>

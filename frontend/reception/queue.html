@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Queue · QueueLess Reception</title>
+    <link rel="stylesheet" href="css/reception.css">
+</head>
+
+<body class="reception-app-page" data-requires-auth="reception" hidden>
+
+    <header class="reception-topbar">
+        <div class="reception-topbar-brand">
+            <span class="auth-brand-mark">Q</span>
+            <span>QueueLess Reception</span>
+        </div>
+        <nav class="reception-nav">
+            <a href="dashboard.html" class="reception-nav-link" data-nav="dashboard">Dashboard</a>
+            <a href="queue.html" class="reception-nav-link" data-nav="queue">Queue</a>
+            <a href="patients.html" class="reception-nav-link" data-nav="patients">Patients</a>
+            <a href="walkin.html" class="reception-nav-link" data-nav="walkin">Walk-In</a>
+        </nav>
+        <div class="reception-topbar-user">
+            <span id="receptionUserName"></span>
+            <button type="button" id="logoutBtn" class="btn-secondary">Log Out</button>
+        </div>
+    </header>
+
+    <main class="reception-main">
+
+        <div class="dash-header">
+            <div>
+                <h1 class="dash-title">Live Queue</h1>
+                <p class="dash-subtitle" id="pageDate">—</p>
+            </div>
+            <div class="dash-header-actions">
+                <label class="clinic-select-wrap">
+                    <span>Clinic</span>
+                    <select id="clinicSelect" aria-label="Select clinic"></select>
+                </label>
+                <label class="clinic-select-wrap">
+                    <span>Department</span>
+                    <select id="departmentSelect" aria-label="Select department" disabled>
+                        <option value="">Loading…</option>
+                    </select>
+                </label>
+                <label class="clinic-select-wrap">
+                    <span>Doctor</span>
+                    <select id="doctorSelect" aria-label="Select doctor" disabled>
+                        <option value="">Select doctor…</option>
+                    </select>
+                </label>
+                <span class="dash-updated" id="pageUpdated"></span>
+                <button type="button" class="btn-secondary" id="refreshBtn" disabled>⟳ Refresh</button>
+            </div>
+        </div>
+
+        <!-- Error state -->
+        <div class="dash-alert" id="pageError" role="alert" hidden>
+            <span id="pageErrorText">Something went wrong.</span>
+            <button type="button" class="btn-secondary" id="pageErrorClose">Dismiss</button>
+        </div>
+
+        <!-- Shown when no doctor is selected yet / no doctors configured -->
+        <p class="empty-state" id="noDoctorState">Select a doctor to view their live queue.</p>
+
+        <div id="queueContent" hidden>
+
+            <!-- Now Consulting / Up Next hero -->
+            <section class="panel queue-hero">
+                <div class="queue-hero-top">
+                    <div>
+                        <p class="queue-hero-doctor" id="heroDoctorName">—</p>
+                        <p class="queue-hero-dept" id="heroDoctorDept"></p>
+                    </div>
+                    <p class="queue-hero-counts" id="heroCounts"></p>
+                </div>
+
+                <div class="doctor-card-tokens queue-hero-tokens">
+                    <div class="token-pill current">
+                        <span class="token-pill-label">Now Consulting</span>
+                        <span class="token-pill-value none" id="heroCurrentValue">—</span>
+                        <span class="token-pill-sub" id="heroCurrentName"></span>
+                    </div>
+                    <div class="token-pill next">
+                        <span class="token-pill-label">Up Next</span>
+                        <span class="token-pill-value none" id="heroNextValue">—</span>
+                        <span class="token-pill-sub" id="heroNextName"></span>
+                    </div>
+                </div>
+
+                <div class="queue-hero-actions">
+                    <button type="button" class="btn-primary" id="callNextBtn" disabled>Call Next</button>
+                    <button type="button" class="btn-secondary" id="completeBtn" disabled>Complete Consultation</button>
+                </div>
+            </section>
+
+            <!-- Full queue table -->
+            <section class="panel">
+                <div class="panel-header">
+                    <h2 class="panel-title">Today's Queue</h2>
+                    <span class="panel-count" id="queueCount"></span>
+                </div>
+                <div class="table-scroll">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Token</th>
+                                <th>Patient</th>
+                                <th>Type</th>
+                                <th>Priority</th>
+                                <th>Status</th>
+                                <th>Position</th>
+                                <th>ETA</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="queueBody"></tbody>
+                    </table>
+                    <p class="empty-state" id="queueEmpty" hidden>No tokens in the queue for this doctor today.</p>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <!-- Confirm dialog -->
+    <div class="modal-overlay" id="confirmOverlay" hidden>
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="confirmTitle" style="max-width: 460px;">
+            <div class="modal-header">
+                <h2 id="confirmTitle">Confirm</h2>
+                <button type="button" class="modal-close" id="confirmClose" aria-label="Close">&times;</button>
+            </div>
+            <p class="confirm-text" id="confirmText"></p>
+            <div class="confirm-actions" id="confirmActions"></div>
+        </div>
+    </div>
+
+    <div class="toast-stack" id="toastStack" aria-live="polite"></div>
+
+<script src="js/reception-data.js"></script>
+<script src="js/reception.js"></script>
+<script src="js/reception-queue.js"></script>
+</body>
+
+</html>

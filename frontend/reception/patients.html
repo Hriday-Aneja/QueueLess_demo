@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Patients · QueueLess Reception</title>
+    <link rel="stylesheet" href="css/reception.css">
+</head>
+
+<body class="reception-app-page" data-requires-auth="reception" hidden>
+
+    <header class="reception-topbar">
+        <div class="reception-topbar-brand">
+            <span class="auth-brand-mark">Q</span>
+            <span>QueueLess Reception</span>
+        </div>
+        <nav class="reception-nav">
+            <a href="dashboard.html" class="reception-nav-link" data-nav="dashboard">Dashboard</a>
+            <a href="queue.html" class="reception-nav-link" data-nav="queue">Queue</a>
+            <a href="patients.html" class="reception-nav-link" data-nav="patients">Patients</a>
+            <a href="walkin.html" class="reception-nav-link" data-nav="walkin">Walk-In</a>
+        </nav>
+        <div class="reception-topbar-user">
+            <span id="receptionUserName"></span>
+            <button type="button" id="logoutBtn" class="btn-secondary">Log Out</button>
+        </div>
+    </header>
+
+    <main class="reception-main">
+
+        <div class="dash-header">
+            <div>
+                <h1 class="dash-title">Patients &amp; Appointments</h1>
+                <p class="dash-subtitle" id="pageDate">—</p>
+            </div>
+            <div class="dash-header-actions">
+                <label class="clinic-select-wrap" id="clinicWrap" hidden>
+                    <span>Clinic</span>
+                    <select id="clinicSelect" aria-label="Select clinic"></select>
+                </label>
+                <span class="dash-updated" id="pageUpdated"></span>
+                <button type="button" class="btn-secondary" id="refreshBtn" disabled>⟳ Refresh</button>
+            </div>
+        </div>
+
+        <!-- Error state -->
+        <div class="dash-alert" id="pageError" role="alert" hidden>
+            <span id="pageErrorText">Something went wrong.</span>
+            <button type="button" class="btn-secondary" id="pageErrorClose">Dismiss</button>
+        </div>
+
+        <!-- Shown when the patient-search endpoint is missing (limited mode) -->
+        <div class="notice" id="limitedNotice" role="status" hidden></div>
+
+        <!-- Search / filter -->
+        <section class="panel">
+            <form class="search-panel" id="searchForm" role="search" autocomplete="off">
+                <div class="segmented" id="searchBy" role="group" aria-label="Search by">
+                    <button type="button" class="active" data-by="all">All</button>
+                    <button type="button" data-by="name">Name</button>
+                    <button type="button" data-by="phone">Phone</button>
+                    <button type="button" data-by="code">Patient code</button>
+                </div>
+                <div class="search-row">
+                    <input type="search" class="search-input" id="searchInput" placeholder="Search patients…"
+                        aria-label="Search patients" maxlength="120">
+                    <button type="submit" class="btn-primary" id="searchBtn">Search</button>
+                </div>
+                <p class="search-hint" id="searchHint">Enter at least 2 characters — name, phone number or patient code.
+                </p>
+            </form>
+        </section>
+
+        <!-- Empty state: no matches -->
+        <p class="empty-state" id="noResults" hidden>No patients matched your search.</p>
+
+        <!-- Patient results -->
+        <section class="panel" id="patientsPanel" hidden>
+            <div class="panel-header">
+                <h2 class="panel-title">Patients</h2>
+                <span class="panel-count" id="patientsCount"></span>
+            </div>
+            <div class="patient-list" id="patientList"></div>
+        </section>
+
+        <!-- Appointments / tokens -->
+        <section class="panel" id="appointmentsPanel" hidden>
+            <div class="panel-header">
+                <h2 class="panel-title" id="appointmentsTitle">Appointments</h2>
+                <span class="panel-count" id="appointmentsCount"></span>
+            </div>
+            <div class="table-scroll">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Token</th>
+                            <th>Patient</th>
+                            <th>Date</th>
+                            <th>Doctor</th>
+                            <th>Type</th>
+                            <th>Status</th>
+                            <th>Position</th>
+                            <th>ETA</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="appointmentsBody"></tbody>
+                </table>
+                <p class="empty-state" id="appointmentsEmpty" hidden>No appointments found.</p>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Confirm dialog -->
+    <div class="modal-overlay" id="confirmOverlay" hidden>
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="confirmTitle" style="max-width: 460px;">
+            <div class="modal-header">
+                <h2 id="confirmTitle">Confirm</h2>
+                <button type="button" class="modal-close" id="confirmClose" aria-label="Close">&times;</button>
+            </div>
+            <p class="confirm-text" id="confirmText"></p>
+            <div class="confirm-actions" id="confirmActions"></div>
+        </div>
+    </div>
+
+    <div class="toast-stack" id="toastStack" aria-live="polite"></div>
+
+    <script src="js/reception-data.js"></script>
+    <script src="js/reception.js"></script>
+    <script src="js/reception-patients.js"></script>
+</body>
+
+</html>

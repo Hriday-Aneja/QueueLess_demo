@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QueueLess Reception Login</title>
+    <link rel="stylesheet" href="css/reception.css">
+</head>
+
+<body class="doctor-auth-body">
+
+    <main class="auth-wrapper">
+        <section class="auth-card" role="main" aria-labelledby="loginTitle">
+
+            <div class="auth-brand">
+                <span class="auth-brand-mark" aria-hidden="true">Q+</span>
+                <h1 class="auth-brand-name">QueueLess</h1>
+            </div>
+
+            <h2 id="loginTitle" class="auth-title">Reception Portal</h2>
+            <p class="auth-subtitle">Sign in to manage the queue and walk-ins.</p>
+
+            <form id="loginForm" class="auth-form">
+                <div class="form-field">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" placeholder="reception@queueless.com" required>
+                    <span class="field-error"></span>
+                </div>
+
+                <div class="form-field">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" placeholder="Enter password" required>
+                    <span class="field-error"></span>
+                </div>
+
+                <div class="form-alert" id="loginError" role="alert" style="display:none;">
+                    Invalid credentials
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-block">
+                    Login
+                </button>
+            </form>
+
+            <div class="auth-demo-hint">
+                <p>Email: <code>reception@queueless.com</code></p>
+            </div>
+
+        </section>
+
+        <p class="auth-footnote">QueueLess Reception Module</p>
+    </main>
+
+    <script src="js/reception-data.js"></script>
+    <script src="js/reception.js"></script>
+
+</body>
+
+</html>
