@@ -23,6 +23,7 @@ define('SESSION_LIFETIME_SECONDS', 60 * 60 * 8); // 8 hours
 define('ROLE_PATIENT', 'patient');
 define('ROLE_RECEPTION', 'reception');
 define('ROLE_ADMIN', 'admin');
+define('ROLE_DOCTOR', 'doctor'); // matches seed.sql's doctor user rows
 
 // ---- Environment ----------------------------------------------------------
 // Set to false in production so PHP errors are never shown to the browser.

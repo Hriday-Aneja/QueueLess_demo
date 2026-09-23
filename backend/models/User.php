@@ -28,10 +28,16 @@ class User
         return $row ?: null;
     }
 
-    public static function emailExists(string $email): bool
+    public static function emailExists(string $email, ?int $excludeUserId = null): bool
     {
-        $stmt = get_db_connection()->prepare('SELECT user_id FROM users WHERE email = :email');
-        $stmt->execute(['email' => $email]);
+        $sql = 'SELECT user_id FROM users WHERE email = :email';
+        $params = ['email' => $email];
+        if ($excludeUserId !== null) {
+            $sql .= ' AND user_id != :exclude_id';
+            $params['exclude_id'] = $excludeUserId;
+        }
+        $stmt = get_db_connection()->prepare($sql);
+        $stmt->execute($params);
         return (bool) $stmt->fetch();
     }
 
@@ -49,5 +55,31 @@ class User
             'role'           => $role,
         ]);
         return (int) get_db_connection()->lastInsertId();
+    }
+
+    /* ---------------------------------------------------------
+     * Admin management (Phase 3) — additive only.
+     * --------------------------------------------------------- */
+
+    public static function update(int $userId, string $fullName, string $email, ?string $phone): void
+    {
+        $stmt = get_db_connection()->prepare(
+            'UPDATE users SET full_name = :full_name, email = :email, phone = :phone
+             WHERE user_id = :id'
+        );
+        $stmt->execute([
+            'full_name' => $fullName,
+            'email'     => $email,
+            'phone'     => $phone,
+            'id'        => $userId,
+        ]);
+    }
+
+    public static function setActive(int $userId, bool $isActive): void
+    {
+        $stmt = get_db_connection()->prepare(
+            'UPDATE users SET is_active = :is_active WHERE user_id = :id'
+        );
+        $stmt->execute(['is_active' => $isActive ? 1 : 0, 'id' => $userId]);
     }
 }

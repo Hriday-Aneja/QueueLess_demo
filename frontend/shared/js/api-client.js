@@ -79,4 +79,19 @@ const Api = {
   adminData: () => apiGet('/admin/data.php'),
   getQueueRules: () => apiGet('/admin/queue-rules.php'),
   setQueueRules: (data) => apiPost('/admin/queue-rules.php', data),
+
+  // ---- Admin: Hospitals/Clinics + Doctors (Phase 3) ----
+  adminListClinics: () => apiGet('/admin/clinics.php'),
+  adminSaveClinic: (data) => apiPost('/admin/clinics.php', data),
+  adminListDoctors: (filters = {}) => {
+    const params = new URLSearchParams();
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value !== null && value !== undefined && value !== '') {
+        params.set(key, value);
+      }
+    });
+    const qs = params.toString();
+    return apiGet('/admin/doctors.php' + (qs ? `?${qs}` : ''));
+  },
+  adminSaveDoctor: (data) => apiPost('/admin/doctors.php', data),
 };

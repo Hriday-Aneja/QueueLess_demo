@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Doctors · QueueLess Admin</title>
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body class="admin-app-page" data-requires-auth="admin" hidden>
+
+  <header class="admin-topbar">
+    <div class="admin-topbar-brand">
+      <span class="auth-brand-mark">Q</span>
+      <span>QueueLess Admin</span>
+    </div>
+    <nav class="admin-nav">
+      <a href="dashboard.html" class="admin-nav-link" data-nav="dashboard">Dashboard</a>
+      <a href="hospitals.html" class="admin-nav-link" data-nav="hospitals">Hospitals</a>
+      <a href="doctors.html" class="admin-nav-link" data-nav="doctors">Doctors</a>
+    </nav>
+    <div class="admin-topbar-user">
+      <span id="adminUserName"></span>
+      <button type="button" id="logoutBtn" class="btn-secondary">Log Out</button>
+    </div>
+  </header>
+
+  <main class="admin-main">
+
+    <div class="dash-header">
+      <div>
+        <h1 class="dash-title">Doctors</h1>
+        <p class="dash-subtitle">Manage doctors across every hospital and department.</p>
+      </div>
+      <div class="dash-header-actions">
+        <button type="button" class="btn-primary btn-inline" id="addDoctorBtn">+ Add Doctor</button>
+      </div>
+    </div>
+
+    <div class="filter-bar">
+      <input type="search" id="doctorSearch" placeholder="Search name or doctor code…" class="filter-input">
+      <select id="filterClinic" class="filter-select">
+        <option value="">All hospitals</option>
+      </select>
+      <select id="filterDepartment" class="filter-select">
+        <option value="">All departments</option>
+      </select>
+      <select id="filterStatus" class="filter-select">
+        <option value="all">All statuses</option>
+        <option value="active">Active only</option>
+        <option value="inactive">Inactive only</option>
+      </select>
+    </div>
+
+    <div class="dash-alert" id="doctorsError" role="alert" hidden>
+      <span id="doctorsErrorText">Something went wrong.</span>
+      <button type="button" class="btn-secondary" id="doctorsRetryBtn">Retry</button>
+    </div>
+
+    <div class="toast" id="doctorsToast" hidden></div>
+
+    <section class="panel">
+      <div class="panel-header">
+        <h2 class="panel-title">All Doctors</h2>
+        <span class="panel-count" id="doctorsCount"></span>
+      </div>
+      <div class="table-scroll">
+        <table class="data-table" id="doctorsTable">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Code</th>
+              <th>Hospital</th>
+              <th>Department</th>
+              <th>Specialization</th>
+              <th>Fee</th>
+              <th>Status</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="doctorsTableBody"></tbody>
+        </table>
+        <p class="empty-state" id="doctorsLoading">Loading doctors…</p>
+        <p class="empty-state" id="doctorsEmpty" hidden>No doctors match these filters.</p>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Add / Edit Doctor modal -->
+  <div class="modal-backdrop" id="doctorModalBackdrop" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="doctorModalTitle">
+      <h2 class="modal-title" id="doctorModalTitle">Add Doctor</h2>
+      <form id="doctorForm" novalidate>
+        <input type="hidden" id="doctorId">
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="doctorFullName">Full Name</label>
+            <input type="text" id="doctorFullName" required maxlength="120">
+            <span class="field-error" id="doctorFullNameError"></span>
+          </div>
+          <div class="form-group">
+            <label for="doctorEmail">Email</label>
+            <input type="email" id="doctorEmail" required maxlength="150">
+            <span class="field-error" id="doctorEmailError"></span>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="doctorPhone">Phone</label>
+            <input type="text" id="doctorPhone" maxlength="20">
+            <span class="field-error" id="doctorPhoneError"></span>
+          </div>
+          <div class="form-group">
+            <label for="doctorCode">Doctor Code</label>
+            <input type="text" id="doctorCode" required maxlength="30" placeholder="e.g. DOC-007">
+            <span class="field-error" id="doctorCodeError"></span>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="doctorClinic">Hospital / Clinic</label>
+            <select id="doctorClinic" required></select>
+            <span class="field-error" id="doctorClinicError"></span>
+          </div>
+          <div class="form-group">
+            <label for="doctorDepartment">Department</label>
+            <select id="doctorDepartment" required></select>
+            <span class="field-error" id="doctorDepartmentError"></span>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="doctorSpecialization">Specialization / Role</label>
+            <input type="text" id="doctorSpecialization" maxlength="100">
+            <span class="field-error" id="doctorSpecializationError"></span>
+          </div>
+          <div class="form-group">
+            <label for="doctorFee">Consultation Fee (₹)</label>
+            <input type="number" id="doctorFee" min="0" step="1">
+            <span class="field-error" id="doctorFeeError"></span>
+          </div>
+        </div>
+
+        <div class="form-group form-group-checkbox">
+          <label><input type="checkbox" id="doctorActive" checked> Active</label>
+        </div>
+
+        <div class="form-alert" id="doctorFormAlert" role="alert" hidden></div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" id="doctorCancelBtn">Cancel</button>
+          <button type="submit" class="btn-primary" id="doctorSaveBtn">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- One-time temp password notice, shown after creating a doctor -->
+  <div class="modal-backdrop" id="tempPasswordBackdrop" hidden>
+    <div class="modal">
+      <h2 class="modal-title">Doctor account created</h2>
+      <p>Share this temporary password with the doctor. It will not be shown again.</p>
+      <p class="temp-password" id="tempPasswordText"></p>
+      <div class="modal-actions">
+        <button type="button" class="btn-primary" id="tempPasswordCloseBtn">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../shared/js/api-client.js"></script>
+  <script src="js/admin.js"></script>
+</body>
+</html>
