@@ -78,4 +78,25 @@ class Appointment
         $stmt->execute(['patient_id' => $patientId]);
         return $stmt->fetchAll();
     }
+
+    public static function listForReceptionPatient(int $patientId): array
+    {
+        $stmt = get_db_connection()->prepare(
+            'SELECT a.appointment_id, a.appointment_date, a.appointment_time,
+                    a.status AS appointment_status, a.priority,
+                    d.doctor_id, d.doctor_code, d.specialization,
+                    dep.department_name,
+                    t.token_id, t.token_number, t.token_date, t.token_type,
+                    qs.current_status, qs.queue_position, qs.estimated_wait_minutes
+             FROM appointments a
+             JOIN doctors d ON d.doctor_id = a.doctor_id
+             JOIN departments dep ON dep.department_id = a.department_id
+             LEFT JOIN tokens t ON t.appointment_id = a.appointment_id
+             LEFT JOIN queue_status qs ON qs.token_id = t.token_id
+             WHERE a.patient_id = :patient_id
+             ORDER BY a.appointment_date DESC, a.appointment_time DESC'
+        );
+        $stmt->execute(['patient_id' => $patientId]);
+        return $stmt->fetchAll();
+    }
 }

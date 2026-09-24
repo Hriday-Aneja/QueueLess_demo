@@ -50,7 +50,9 @@ const Api = {
   // ---- Clinics / Doctors ----
   listClinics: () => apiGet('/clinics/list.php'),
   listDoctors: (clinicId) => apiGet(`/doctors/list.php?clinic_id=${clinicId}`),
+  listDepartments: (clinicId) => apiGet(`/admin/departments.php?clinic_id=${clinicId}`),
   doctorSchedule: (doctorId, date) => apiGet(`/doctors/schedules.php?doctor_id=${doctorId}&date=${date}`),
+  receptionSearchPatients: (query, patientId = null) => apiGet(`/patients/reception-search.php?q=${encodeURIComponent(query)}${patientId ? `&patient_id=${encodeURIComponent(patientId)}` : ''}`),
 
   // ---- Appointments ----
   bookAppointment: (data) => apiPost('/appointments/book.php', data),
@@ -72,6 +74,7 @@ const Api = {
   startConsultation: (tokenId) => apiPost('/queue/start-consultation.php', { token_id: tokenId }),
   saveConsultationNotes: (tokenId, notes) => apiPost('/queue/notes.php', { token_id: tokenId, notes }),
   completeConsultation: (tokenId, notes) => apiPost('/queue/complete.php', { token_id: tokenId, notes }),
+  receptionView: (doctorId, date) => apiGet(`/queue/reception-view.php?doctor_id=${doctorId}&date=${date}`),
 
   // ---- Doctor ----
   doctorDashboard: () => apiGet('/doctors/dashboard.php'),

@@ -18,6 +18,22 @@ class Patient
         return $row ?: null;
     }
 
+    public static function searchForReception(string $query): array
+    {
+        $stmt = get_db_connection()->prepare(
+            'SELECT p.patient_id, p.patient_code, u.full_name, u.phone
+             FROM patients p
+             LEFT JOIN users u ON u.user_id = p.user_id
+             WHERE p.patient_code LIKE :query
+                OR u.full_name LIKE :query
+                OR u.phone LIKE :query
+             ORDER BY u.full_name ASC
+             LIMIT 50'
+        );
+        $stmt->execute(['query' => '%' . $query . '%']);
+        return $stmt->fetchAll();
+    }
+
     /**
      * Creates a patient row. $userId is null for a walk-in with no login.
      * patient_code is generated as PT-0001, PT-0002, ... from the new row's id.

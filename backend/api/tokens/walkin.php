@@ -11,6 +11,7 @@ $input = Validator::jsonBody();
 
 $errors = Validator::validate($input, [
     'doctor_id'     => 'required|int',
+    'patient_id'    => 'int',
     'patient_name'  => 'required|max:120',
     'patient_phone' => 'max:20',
     'priority'      => 'in:normal,priority,emergency',
@@ -25,12 +26,15 @@ if ($doctor === null) {
 }
 
 try {
-    $result = QueueEngine::createWalkIn(
-        (int) $input['doctor_id'],
-        $input['patient_name'],
-        $input['patient_phone'] ?? null,
-        $input['priority'] ?? 'normal'
-    );
+    if (!empty($input['patient_id'])) {
+        $patient = Patient::findById((int) $input['patient_id']);
+        if ($patient === null) Response::error('Patient not found.', 404);
+        $result = TokenGenerator::forWalkIn((int) $input['doctor_id'], (int) $input['patient_id'], $input['priority'] ?? 'normal');
+    } else {
+        $result = QueueEngine::createWalkIn(
+            (int) $input['doctor_id'], $input['patient_name'], $input['patient_phone'] ?? null, $input['priority'] ?? 'normal'
+        );
+    }
 } catch (RuntimeException $e) {
     Response::error($e->getMessage(), 409);
 }
