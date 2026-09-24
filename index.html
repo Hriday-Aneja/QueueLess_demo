@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QueueLess – Welcome</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700;800&display=swap');
+
+:root {
+  --font-display: "Playfair Display", Georgia, serif;
+  --font-ui: "Inter", Arial, sans-serif;
+  --bg: #F7F4FC;
+  --text: #332F3A;
+  --muted: #635F69;
+  --purple: #7C3AED;
+  --purple-light: #A78BFA;
+  --purple-soft: #C084FC;
+  --field: #F1EDF6;
+  --error: #C2255C;
+  --green: #10B981;
+}
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: var(--font-ui);
+  color: var(--text);
+  line-height: 1.55;
+  overflow-x: hidden;
+  background:
+    radial-gradient(circle at 20% 20%, rgba(139,92,246,0.06), transparent 35%),
+    radial-gradient(circle at 85% 70%, rgba(219,39,119,0.04), transparent 35%),
+    var(--bg);
+}
+button, input { font-family: var(--font-ui); }
+[hidden] { display: none !important; }
+:focus-visible { outline: 3px solid rgba(124,58,237,0.45); outline-offset: 3px; }
+
+/* ---------- decorations ---------- */
+.deco { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+.deco span { position: absolute; display: block; animation: floatSoft 9s ease-in-out infinite; }
+.cube {
+  width: 60px; height: 60px; border-radius: 18px; top: 13%; left: 7%;
+  background: linear-gradient(145deg, #D08AFF, #8B5CF6);
+  box-shadow: 12px 18px 30px rgba(124,58,237,0.18), inset 5px 5px 10px rgba(255,255,255,0.25), inset -5px -5px 12px rgba(87,35,174,0.12);
+}
+.sphere {
+  width: 44px; height: 44px; border-radius: 50%; top: 22%; right: 8%; animation-delay: -3s !important; animation-duration: 8s !important;
+  background: radial-gradient(circle at 30% 28%, #FBCFE8, #DB2777);
+  opacity: .8;
+  box-shadow: 10px 14px 26px rgba(219,39,119,0.18), inset -4px -6px 10px rgba(157,23,77,0.15);
+}
+.glow {
+  width: 340px; height: 340px; border-radius: 50%; bottom: -80px; left: 30%; animation: none !important;
+  background: radial-gradient(circle, rgba(14,165,233,0.10), transparent 68%);
+}
+@keyframes floatSoft { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
+
+/* ---------- page ---------- */
+.page { position: relative; z-index: 1; max-width: 1160px; margin: 0 auto; padding: 44px clamp(22px, 5vw, 72px) 96px; }
+.brand { font-size: 1.4rem; font-weight: 800; letter-spacing: -0.02em; color: var(--text); }
+.brand span { color: var(--purple); }
+
+/* ---------- role selection ---------- */
+.roles { text-align: center; padding-top: clamp(40px, 7vw, 84px); }
+.roles h1 {
+  font-family: var(--font-display); font-weight: 700; margin: 0;
+  font-size: clamp(2.4rem, 4.6vw, 3.9rem); line-height: 1.05; letter-spacing: -0.03em;
+}
+.roles > p { margin: 16px 0 0; color: var(--muted); font-size: 1.08rem; }
+.role-grid {
+  margin: clamp(36px, 5vw, 56px) auto 0; max-width: 1040px;
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 22px;
+}
+.role-card {
+  position: relative; text-align: left; cursor: pointer; color: var(--text);
+  padding: 26px 22px 24px; min-height: 196px; border-radius: 20px;
+  background: rgba(255,255,255,0.70);
+  border: 1px solid rgba(124,58,237,0.06);
+  box-shadow: 10px 12px 28px rgba(112,95,140,0.09), -8px -8px 20px rgba(255,255,255,0.90);
+  transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease, background .2s ease;
+}
+.role-card:hover { transform: translateY(-4px); }
+.role-card.selected {
+  transform: translateY(-4px);
+  background: rgba(255,255,255,0.95);
+  border-color: rgba(124,58,237,0.40);
+  box-shadow: 0 14px 30px rgba(124,58,237,0.16), inset 0 0 0 2px rgba(124,58,237,0.08);
+}
+.role-icon {
+  width: 48px; height: 48px; border-radius: 14px; display: grid; place-items: center;
+  background: #EFE8FB; color: var(--purple); transition: background .2s ease, color .2s ease;
+}
+.role-card.selected .role-icon { background: linear-gradient(145deg, #B76CFF, #7C3AED); color: #fff; }
+.role-icon svg { width: 24px; height: 24px; }
+.role-name { display: block; margin-top: 20px; font-weight: 700; font-size: 1.1rem; }
+.role-desc { display: block; margin-top: 6px; color: var(--muted); font-size: .9rem; line-height: 1.5; }
+.tick {
+  position: absolute; top: 16px; right: 16px; width: 24px; height: 24px; border-radius: 50%;
+  background: var(--purple); color: #fff; display: grid; place-items: center;
+  opacity: 0; transform: scale(.6); transition: opacity .2s ease, transform .2s ease;
+}
+.tick svg { width: 14px; height: 14px; }
+.role-card.selected .tick { opacity: 1; transform: scale(1); }
+
+/* ---------- signup ---------- */
+.signup {
+  margin-top: clamp(56px, 8vw, 104px);
+  display: grid; grid-template-columns: 1fr minmax(0, 480px); gap: clamp(40px, 7vw, 96px); align-items: center;
+  animation: fadeUp .6s ease both;
+}
+@keyframes fadeUp { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }
+.signup-copy h2 {
+  font-family: var(--font-display); font-weight: 700; margin: 0; color: var(--text);
+  font-size: clamp(2.7rem, 5vw, 4.8rem); line-height: 1.02; letter-spacing: -0.03em; overflow-wrap: anywhere;
+}
+.signup-copy .tagline { margin: 24px 0 0; font-size: 1.15rem; color: var(--muted); max-width: 30ch; }
+.signup-copy .role-line { margin: 14px 0 0; font-size: .98rem; color: var(--muted); max-width: 40ch; }
+
+.card {
+  padding: clamp(22px, 4vw, 40px); border-radius: 32px;
+  background: rgba(255,255,255,0.72);
+  -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+  box-shadow: 18px 18px 45px rgba(112,95,140,0.10), -12px -12px 35px rgba(255,255,255,0.92), inset 0 1px 0 rgba(255,255,255,0.80);
+}
+.field { margin-bottom: 18px; }
+label { display: block; margin-bottom: 8px; font-size: .88rem; font-weight: 600; color: var(--text); }
+.input-wrap { position: relative; }
+input {
+  width: 100%; min-height: 50px; background: var(--field); color: var(--text);
+  border: 1px solid transparent; border-radius: 16px; padding: 15px 17px; font-size: 1rem;
+  box-shadow: inset 4px 4px 10px rgba(123,108,145,0.10), inset -4px -4px 10px rgba(255,255,255,0.90);
+  transition: box-shadow .2s ease, background .2s ease, border-color .2s ease;
+}
+input::placeholder { color: #9C97A6; }
+input:focus {
+  outline: none; background: #fff; border-color: rgba(124,58,237,0.20);
+  box-shadow: 0 0 0 4px rgba(124,58,237,0.10), inset 2px 2px 6px rgba(120,100,145,0.05);
+}
+input[aria-invalid="true"] { border-color: rgba(194,37,92,0.45); }
+input[aria-invalid="true"]:focus { box-shadow: 0 0 0 4px rgba(194,37,92,0.10), inset 2px 2px 6px rgba(120,100,145,0.05); }
+.has-toggle input { padding-right: 76px; }
+.toggle {
+  position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+  min-height: 36px; padding: 0 12px; border: 0; border-radius: 10px; background: transparent;
+  color: var(--purple); font-size: .85rem; font-weight: 600; cursor: pointer;
+}
+.toggle:hover { background: rgba(124,58,237,0.08); }
+.error { margin: 7px 2px 0; min-height: 0; font-size: .82rem; color: var(--error); }
+.error:empty { display: none; }
+
+.cta {
+  width: 100%; min-height: 54px; margin-top: 8px; border: 0; border-radius: 16px; cursor: pointer;
+  color: #fff; font-weight: 700; font-size: .98rem; letter-spacing: .06em;
+  background: linear-gradient(135deg, #B76CFF, #8B5CF6, #6D28D9);
+  box-shadow: 0 12px 24px rgba(124,58,237,0.25), inset 0 3px 6px rgba(255,255,255,0.24), inset 0 -3px 6px rgba(69,30,150,0.15);
+  transition: transform .2s ease, box-shadow .2s ease;
+}
+.cta:hover { transform: translateY(-2px); box-shadow: 0 16px 30px rgba(124,58,237,0.30), inset 0 3px 6px rgba(255,255,255,0.24), inset 0 -3px 6px rgba(69,30,150,0.15); }
+.cta:active { transform: scale(0.97); }
+.alt { margin: 22px 0 0; text-align: center; color: var(--muted); font-size: .92rem; }
+.alt a, .text-btn { color: var(--purple); font-weight: 600; text-decoration: none; }
+.alt a:hover, .text-btn:hover { text-decoration: underline; }
+
+.success { text-align: center; padding: 18px 0 6px; animation: fadeUp .5s ease both; }
+.success-badge {
+  width: 68px; height: 68px; margin: 0 auto 22px; border-radius: 22px; display: grid; place-items: center; color: #fff;
+  background: linear-gradient(145deg, #34D399, #10B981);
+  box-shadow: 0 12px 24px rgba(16,185,129,0.25), inset 0 3px 6px rgba(255,255,255,0.28);
+}
+.success-badge svg { width: 30px; height: 30px; }
+.success h3 { margin: 0; font-size: 1.4rem; font-weight: 700; letter-spacing: -0.01em; }
+.success p { margin: 10px auto 0; max-width: 32ch; color: var(--muted); }
+.text-btn { margin-top: 24px; background: none; border: 0; padding: 10px 14px; font-size: .95rem; cursor: pointer; }
+
+/* ---------- sign in / sign up selector ---------- */
+.auth-tabs {
+  display: flex; gap: 6px; padding: 5px; margin-bottom: 26px; border-radius: 16px;
+  background: #EFE8FB; box-shadow: inset 3px 3px 8px rgba(123,108,145,0.10), inset -3px -3px 8px rgba(255,255,255,0.80);
+}
+.auth-tab {
+  flex: 1; min-height: 44px; border: 1px solid transparent; border-radius: 12px; cursor: pointer;
+  background: transparent; color: var(--text); font-size: .95rem; font-weight: 500;
+  transition: background .2s ease, color .2s ease, box-shadow .2s ease, border-color .2s ease;
+}
+.auth-tab:hover { background: rgba(255,255,255,0.45); }
+.auth-tab.selected {
+  background: #fff; color: var(--purple); font-weight: 700; border-color: rgba(124,58,237,0.16);
+  box-shadow: 0 6px 14px rgba(124,58,237,0.14), 0 1px 0 rgba(255,255,255,0.9);
+}
+.card-title { margin: 0 0 22px; font-size: 1.35rem; font-weight: 700; letter-spacing: -0.01em; color: var(--text); }
+
+/* ---------- responsive ---------- */
+@media (max-width: 980px) {
+  .role-grid { grid-template-columns: repeat(2, 1fr); max-width: 640px; }
+  .signup { grid-template-columns: 1fr; gap: 36px; }
+  .signup-copy { text-align: center; }
+  .signup-copy .tagline, .signup-copy .role-line { margin-left: auto; margin-right: auto; }
+  .card { width: 100%; max-width: 520px; margin: 0 auto; }
+}
+@media (max-width: 720px) {
+  .deco { display: none; }
+  .page { padding-top: 30px; }
+  .role-grid { gap: 14px; }
+  .role-card { padding: 20px 16px; min-height: 176px; }
+  .role-desc { font-size: .84rem; }
+}
+@media (max-width: 380px) {
+  .role-grid { grid-template-columns: 1fr; }
+  .role-card { min-height: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+</style>
+</head>
+<body>
+<div class="deco" aria-hidden="true"><span class="cube"></span><span class="sphere"></span><span class="glow"></span></div>
+
+<main class="page">
+  <div class="brand">Queue<span>Less</span></div>
+
+  <section class="roles" aria-labelledby="welcome-title">
+    <h1 id="welcome-title">Welcome to QueueLess</h1>
+    <p id="roles-hint">Choose how you want to continue.</p>
+
+    <div class="role-grid" role="radiogroup" aria-labelledby="welcome-title">
+      <button type="button" class="role-card" role="radio" aria-checked="false" data-role="patient">
+        <span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>
+        <span class="role-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5"/></svg></span>
+        <span class="role-name">Patient</span>
+        <span class="role-desc">Book appointments and track your queue.</span>
+      </button>
+      <button type="button" class="role-card" role="radio" aria-checked="false" data-role="doctor">
+        <span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>
+        <span class="role-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3v6a4 4 0 0 0 8 0V3"/><path d="M10 13v2a5 5 0 0 0 10 0v-1.5"/><circle cx="20" cy="12" r="2"/></svg></span>
+        <span class="role-name">Doctor</span>
+        <span class="role-desc">View assigned consultation information.</span>
+      </button>
+      <button type="button" class="role-card" role="radio" aria-checked="false" data-role="receptionist">
+        <span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>
+        <span class="role-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="3"/><path d="M9 4.5h6M9 11h6M9 15h4"/></svg></span>
+        <span class="role-name">Receptionist</span>
+        <span class="role-desc">Manage patient arrivals and queue operations.</span>
+      </button>
+      <button type="button" class="role-card" role="radio" aria-checked="false" data-role="admin">
+        <span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>
+        <span class="role-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7.5 3v5.5c0 4.5-3.1 8-7.5 9.5-4.4-1.5-7.5-5-7.5-9.5V6z"/><path d="M9 12l2.2 2.2L15.5 10"/></svg></span>
+        <span class="role-name">Admin</span>
+        <span class="role-desc">Manage clinics, staff and system operations.</span>
+      </button>
+    </div>
+  </section>
+
+  <section class="signup" id="auth" aria-labelledby="auth-title" hidden>
+    <div class="signup-copy">
+      <h2 id="auth-title">Sign in as Patient.</h2>
+      <p class="tagline">Skip the uncertainty. Know your place in the queue.</p>
+      <p class="role-line" id="role-line"></p>
+    </div>
+
+    <div class="card">
+      <div class="auth-tabs" role="radiogroup" aria-label="Sign in or sign up">
+        <button type="button" class="auth-tab selected" role="radio" aria-checked="true" data-mode="signin">Sign In</button>
+        <button type="button" class="auth-tab" role="radio" aria-checked="false" data-mode="signup">Sign Up</button>
+      </div>
+      <h3 class="card-title" id="card-title">Welcome back</h3>
+
+      <!-- SIGN IN -->
+      <form id="signin-form" novalidate>
+        <div class="field">
+          <label for="si-email">Email Address</label>
+          <div class="input-wrap"><input id="si-email" type="email" autocomplete="email" placeholder="you@example.com" aria-describedby="si-email-err"></div>
+          <p class="error" id="si-email-err" role="alert"></p>
+        </div>
+        <div class="field">
+          <label for="si-password">Password</label>
+          <div class="input-wrap has-toggle">
+            <input id="si-password" type="password" autocomplete="current-password" placeholder="Your password" aria-describedby="si-password-err">
+            <button type="button" class="toggle" data-target="si-password" aria-label="Show password">Show</button>
+          </div>
+          <p class="error" id="si-password-err" role="alert"></p>
+        </div>
+        <button type="submit" class="cta">SIGN IN</button>
+        <p class="alt">Don't have an account? <a href="#" data-switch="signup">Sign Up</a></p>
+      </form>
+
+      <!-- SIGN UP -->
+      <form id="signup-form" novalidate hidden>
+        <div class="field">
+          <label for="fullName">Full Name</label>
+          <div class="input-wrap"><input id="fullName" name="fullName" type="text" autocomplete="name" placeholder="Your full name" aria-describedby="fullName-err"></div>
+          <p class="error" id="fullName-err" role="alert"></p>
+        </div>
+        <div class="field">
+          <label for="email">Email Address</label>
+          <div class="input-wrap"><input id="email" name="email" type="email" autocomplete="email" placeholder="you@example.com" aria-describedby="email-err"></div>
+          <p class="error" id="email-err" role="alert"></p>
+        </div>
+        <div class="field">
+          <label for="phone">Phone Number</label>
+          <div class="input-wrap"><input id="phone" name="phone" type="tel" autocomplete="tel" placeholder="+91 98765 43210" aria-describedby="phone-err"></div>
+          <p class="error" id="phone-err" role="alert"></p>
+        </div>
+        <div class="field">
+          <label for="password">Password</label>
+          <div class="input-wrap has-toggle">
+            <input id="password" name="password" type="password" autocomplete="new-password" placeholder="At least 6 characters" aria-describedby="password-err">
+            <button type="button" class="toggle" data-target="password" aria-label="Show password">Show</button>
+          </div>
+          <p class="error" id="password-err" role="alert"></p>
+        </div>
+        <div class="field">
+          <label for="confirm">Confirm Password</label>
+          <div class="input-wrap has-toggle">
+            <input id="confirm" name="confirm" type="password" autocomplete="new-password" placeholder="Re-enter your password" aria-describedby="confirm-err">
+            <button type="button" class="toggle" data-target="confirm" aria-label="Show confirm password">Show</button>
+          </div>
+          <p class="error" id="confirm-err" role="alert"></p>
+        </div>
+        <button type="submit" class="cta">CREATE ACCOUNT</button>
+        <p class="alt">Already have an account? <a href="#" data-switch="signin">Sign In</a></p>
+      </form>
+
+      <div class="success" id="success" role="status" hidden>
+        <div class="success-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
+        <h3 id="success-title">Account created successfully</h3>
+        <p id="success-msg"></p>
+        <button type="button" class="text-btn" id="reset-btn">Create another account</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script>
+(function () {
+  // Demo only: role and mode live in memory. Nothing is saved or sent anywhere.
+  var selectedRole = null;   // "patient" | "doctor" | "receptionist" | "admin"
+  var authMode = 'signin';   // "signin" | "signup"
+  var ROLES = {
+    patient:      { label: 'Patient',      line: 'Book appointments and follow your place in the queue.' },
+    doctor:       { label: 'Doctor',       line: 'See your consultations and who is next.' },
+    receptionist: { label: 'Receptionist', line: 'Manage arrivals and keep the queue moving.' },
+    admin:        { label: 'Admin',        line: 'Set up clinics, staff and system operations.' }
+  };
+  var SIGNIN_FIELDS = ['si-email', 'si-password'];
+  var SIGNUP_FIELDS = ['fullName', 'email', 'phone', 'password', 'confirm'];
+  var ALL_FIELDS = SIGNIN_FIELDS.concat(SIGNUP_FIELDS);
+
+  var cards = document.querySelectorAll('.role-card');
+  var tabs = document.querySelectorAll('.auth-tab');
+  var section = document.getElementById('auth');
+  var title = document.getElementById('auth-title');
+  var cardTitle = document.getElementById('card-title');
+  var roleLine = document.getElementById('role-line');
+  var signinForm = document.getElementById('signin-form');
+  var signupForm = document.getElementById('signup-form');
+  var success = document.getElementById('success');
+
+  function updateHeading() {
+    if (!selectedRole) return;
+    var label = ROLES[selectedRole].label;
+    var signin = authMode === 'signin';
+    title.textContent = signin ? 'Sign in as ' + label + '.' : 'Create your ' + label + ' account.';
+    cardTitle.textContent = signin ? 'Welcome back' : 'Create your account';
+    roleLine.textContent = ROLES[selectedRole].line;
+    document.title = 'QueueLess – ' + label + (signin ? ' sign in' : ' sign up');
+  }
+
+  function setAuthMode(mode) {
+    authMode = mode;
+    tabs.forEach(function (t) {
+      var on = t.getAttribute('data-mode') === mode;
+      t.classList.toggle('selected', on);
+      t.setAttribute('aria-checked', on ? 'true' : 'false');
+    });
+    signinForm.hidden = mode !== 'signin';
+    signupForm.hidden = mode !== 'signup';
+    success.hidden = true;
+    clearErrors(ALL_FIELDS);
+    updateHeading();
+  }
+
+  function selectRole(role) {
+    selectedRole = role;
+    cards.forEach(function (c) {
+      var on = c.getAttribute('data-role') === role;
+      c.classList.toggle('selected', on);
+      c.setAttribute('aria-checked', on ? 'true' : 'false');
+    });
+    setAuthMode(authMode);
+    if (section.hidden) {
+      section.hidden = false;
+      var calm = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      setTimeout(function () { section.scrollIntoView({ behavior: calm ? 'auto' : 'smooth', block: 'start' }); }, 60);
+    }
+  }
+
+  function showFieldError(id, msg) {
+    document.getElementById(id + '-err').textContent = msg;
+    document.getElementById(id).setAttribute('aria-invalid', 'true');
+  }
+  function clearErrors(ids) {
+    ids.forEach(function (id) {
+      document.getElementById(id + '-err').textContent = '';
+      document.getElementById(id).removeAttribute('aria-invalid');
+    });
+  }
+  function isEmail(s) { return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(s); }
+  function applyErrors(errors) {
+    errors.forEach(function (e) { showFieldError(e[0], e[1]); });
+    if (errors.length) document.getElementById(errors[0][0]).focus();
+    return errors.length === 0;
+  }
+  function val(id) { return document.getElementById(id).value; }
+
+  function validateSignIn() {
+    clearErrors(SIGNIN_FIELDS);
+    var errors = [];
+    if (!val('si-email').trim()) errors.push(['si-email', 'Enter your email address.']);
+    else if (!isEmail(val('si-email').trim())) errors.push(['si-email', 'Enter a valid email, like name@example.com.']);
+    if (!val('si-password')) errors.push(['si-password', 'Enter your password.']);
+    return applyErrors(errors);
+  }
+
+  function validateSignUp() {
+    clearErrors(SIGNUP_FIELDS);
+    var errors = [];
+    var name = val('fullName').trim();
+    var phone = val('phone').replace(/[\s\-().]/g, '');
+
+    if (!name) errors.push(['fullName', 'Enter your full name.']);
+    else if (name.length < 2) errors.push(['fullName', 'Full name must be at least 2 characters.']);
+
+    if (!val('email').trim()) errors.push(['email', 'Enter your email address.']);
+    else if (!isEmail(val('email').trim())) errors.push(['email', 'Enter a valid email, like name@example.com.']);
+
+    if (!val('phone').trim()) errors.push(['phone', 'Enter your phone number.']);
+    else if (!/^\+?\d{7,15}$/.test(phone)) errors.push(['phone', 'Enter a valid phone number (7–15 digits).']);
+
+    if (!val('password')) errors.push(['password', 'Create a password.']);
+    else if (val('password').length < 6) errors.push(['password', 'Password must be at least 6 characters.']);
+
+    if (!val('confirm')) errors.push(['confirm', 'Confirm your password.']);
+    else if (val('confirm') !== val('password')) errors.push(['confirm', 'Passwords do not match.']);
+
+    return applyErrors(errors);
+  }
+
+  function showSuccess() {
+    var label = ROLES[selectedRole].label.toLowerCase();
+    var signin = authMode === 'signin';
+    document.getElementById('success-title').textContent = signin ? 'Signed in successfully' : 'Account created successfully';
+    if (signin) {
+      document.getElementById('success-msg').textContent = 'Welcome back. You are signed in to your ' + label + ' account.';
+    } else {
+      var first = val('fullName').trim().split(/\s+/)[0];
+      document.getElementById('success-msg').textContent = 'Welcome, ' + first + '. Your ' + label + ' account is ready.';
+    }
+    document.getElementById('reset-btn').textContent = signin ? 'Back to sign in' : 'Create another account';
+    signinForm.hidden = true;
+    signupForm.hidden = true;
+    success.hidden = false;
+  }
+
+  cards.forEach(function (c) {
+    c.addEventListener('click', function () { selectRole(c.getAttribute('data-role')); });
+  });
+  tabs.forEach(function (t) {
+    t.addEventListener('click', function () { setAuthMode(t.getAttribute('data-mode')); });
+  });
+  document.querySelectorAll('[data-switch]').forEach(function (a) {
+    a.addEventListener('click', function (e) {
+      e.preventDefault();
+      setAuthMode(a.getAttribute('data-switch'));
+      var form = authMode === 'signin' ? signinForm : signupForm;
+      form.querySelector('input').focus();
+    });
+  });
+
+  signinForm.addEventListener('submit', function (e) {
+    e.preventDefault();
+    if (validateSignIn()) showSuccess();
+  });
+  signupForm.addEventListener('submit', function (e) {
+    e.preventDefault();
+    if (validateSignUp()) showSuccess();
+  });
+  ALL_FIELDS.forEach(function (id) {
+    document.getElementById(id).addEventListener('input', function () {
+      document.getElementById(id + '-err').textContent = '';
+      this.removeAttribute('aria-invalid');
+    });
+  });
+  document.querySelectorAll('.toggle').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var input = document.getElementById(btn.getAttribute('data-target'));
+      var show = input.type === 'password';
+      input.type = show ? 'text' : 'password';
+      btn.textContent = show ? 'Hide' : 'Show';
+      btn.setAttribute('aria-label', (show ? 'Hide ' : 'Show ') + (input.id === 'confirm' ? 'confirm password' : 'password'));
+    });
+  });
+  document.getElementById('reset-btn').addEventListener('click', function () {
+    signinForm.reset();
+    signupForm.reset();
+    setAuthMode(authMode);
+    (authMode === 'signin' ? signinForm : signupForm).querySelector('input').focus();
+  });
+
+  setAuthMode('signin');
+})();
+</script>
+</body>
+</html>
