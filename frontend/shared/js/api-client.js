@@ -26,7 +26,12 @@ async function apiRequest(method, path, body = null) {
   try {
     json = await response.json();
   } catch (parseErr) {
+    console.error('API returned a non-JSON response', { method, path, status: response.status });
     return { success: false, message: 'Unexpected server response.' };
+  }
+
+  if (!response.ok || json.success === false) {
+    console.error('API request failed', { method, path, status: response.status, response: json });
   }
 
   return json;

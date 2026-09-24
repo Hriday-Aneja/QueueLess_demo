@@ -100,8 +100,10 @@ class Doctor
             $where[] = 'd.is_active = FALSE';
         }
         if (!empty($filters['search'])) {
-            $where[] = '(u.full_name LIKE :search OR d.doctor_code LIKE :search)';
-            $params['search'] = '%' . $filters['search'] . '%';
+            $where[] = '(u.full_name LIKE :name_search OR d.doctor_code LIKE :code_search)';
+            $search = '%' . $filters['search'] . '%';
+            $params['name_search'] = $search;
+            $params['code_search'] = $search;
         }
 
         $sql = 'SELECT d.doctor_id, d.doctor_code, d.specialization, d.consultation_fee, d.is_active,

@@ -413,7 +413,15 @@
       loadingEl.hidden = true;
 
       if (!res.success) {
+        console.error('Failed to load hospitals', res);
         errorTextEl.textContent = res.message || 'Could not load hospitals.';
+        errorEl.hidden = false;
+        return;
+      }
+
+      if (!res.data || !Array.isArray(res.data.clinics)) {
+        console.error('Invalid hospitals API response', res);
+        errorTextEl.textContent = 'The server returned an invalid hospitals response.';
         errorEl.hidden = false;
         return;
       }
@@ -659,6 +667,12 @@
       }
 
       delete deptErrors[clinicId];
+      if (!res.data || !Array.isArray(res.data.departments)) {
+        console.error('Invalid departments API response', clinicId, res);
+        deptErrors[clinicId] = 'The server returned an invalid departments response.';
+        delete deptCache[clinicId];
+        return;
+      }
       deptCache[clinicId] = res.data.departments;
     }
 
@@ -719,7 +733,8 @@
       showToast(toastEl, departmentId ? 'Department updated.' : 'Department added.');
       expandedIds.add(clinicId);
       await refreshDepartments(clinicId);
-      load();
+      renderTable();
+      await load();
     }
 
     async function toggleDeptActive(dept) {
@@ -778,6 +793,17 @@
 
     const tempPwBackdrop = document.getElementById('tempPasswordBackdrop');
     const tempPwText = document.getElementById('tempPasswordText');
+    document.getElementById('tempPasswordCopyBtn').addEventListener('click', async () => {
+      const password = tempPwText.textContent;
+      if (!password) return;
+      try {
+        await navigator.clipboard.writeText(password);
+        showToast(toastEl, 'Temporary password copied.');
+      } catch (err) {
+        console.error('Could not copy temporary password', err);
+        showToast(toastEl, 'Could not copy the temporary password.');
+      }
+    });
     document.getElementById('tempPasswordCloseBtn').addEventListener('click', () => {
       tempPwBackdrop.hidden = true;
     });
@@ -807,7 +833,15 @@
 
     async function init() {
       const res = await Api.adminListClinics();
-      if (res.success) {
+      if (!res.success) {
+        console.error('Failed to load hospitals for doctor form', res);
+        errorTextEl.textContent = res.message || 'Could not load hospitals for the doctor form.';
+        errorEl.hidden = false;
+      } else if (!res.data || !Array.isArray(res.data.clinics)) {
+        console.error('Invalid hospitals response for doctor form', res);
+        errorTextEl.textContent = 'The server returned an invalid hospitals response.';
+        errorEl.hidden = false;
+      } else {
         clinics = res.data.clinics;
         populateClinicOptions(filterClinic, true);
         populateClinicOptions(modalClinicSelect, false);
@@ -852,7 +886,15 @@
       loadingEl.hidden = true;
 
       if (!res.success) {
+        console.error('Failed to load doctors', res);
         errorTextEl.textContent = res.message || 'Could not load doctors.';
+        errorEl.hidden = false;
+        return;
+      }
+
+      if (!res.data || !Array.isArray(res.data.doctors)) {
+        console.error('Invalid doctors API response', res);
+        errorTextEl.textContent = 'The server returned an invalid doctors response.';
         errorEl.hidden = false;
         return;
       }
@@ -985,9 +1027,17 @@
 
       closeModal();
 
-      if (!doctorId && res.data.temp_password) {
-        tempPwText.textContent = res.data.temp_password;
+      console.log('Doctor save response', res);
+      const tempPassword = res.data && typeof res.data.temp_password === 'string'
+        ? res.data.temp_password
+        : '';
+
+      if (!doctorId && tempPassword) {
+        tempPwText.textContent = tempPassword;
         tempPwBackdrop.hidden = false;
+      } else if (!doctorId) {
+        console.error('Doctor creation response did not include temp_password', res);
+        showToast(toastEl, 'Doctor created, but the temporary password was not returned. Check the server response.');
       } else {
         showToast(toastEl, 'Doctor updated.');
       }
