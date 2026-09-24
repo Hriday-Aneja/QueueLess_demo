@@ -1,10 +1,13 @@
 /* ==========================================================================
    QueueLess — frontend/patient/js/patient.js
-   Patient module application logic: auth, hash-based SPA router, mock data,
-   and per-view rendering. Runs in MOCK MODE by default — the API base is
-   kept pointed at ../../backend/api (see API_BASE below) so switching to
-   the real backend later is a one-line change once Arnav's endpoints are
-   implemented.
+   Patient module application logic: auth, hash-based SPA router, and
+   per-view rendering.
+
+   Auth (login/register/session guard/logout) is wired to the real
+   backend/api endpoints — see initAuthPage() and initDashboardPage().
+   Every other view (clinics, doctors, booking, live queue, appointments,
+   history, notifications) still renders from MockDB below; those are the
+   next integration phase and are NOT yet connected to the real backend.
    ========================================================================== */
 
 (function () {
@@ -14,8 +17,8 @@
      Config
      ------------------------------------------------------------------ */
 
-  var API_BASE = "../../backend/api";
-  var MOCK_MODE = true; // Flip to false once backend/api endpoints are implemented.
+  var API_BASE = "../../backend/api"; // informational only — Api.* in api-client.js owns the real base URL
+  var MOCK_MODE = false; // Auth is real now. Booking/queue/appointments views below still read MockDB.
   var SESSION_KEY = "ql_patient_session";
 
   var api = new window.QueueLess.ApiClient({ baseUrl: API_BASE, mockMode: MOCK_MODE });
@@ -237,11 +240,21 @@
      ------------------------------------------------------------------ */
 
   var State = {
-    booking: { clinicId: null, doctorId: null, dateIso: null, time: null },
-    lastConfirmedAppointmentId: null,
+    booking: { clinicId: null, clinicName: null, doctorId: null, doctorName: null, doctorSpecialization: null, dateIso: null, time: null },
+    lastBooking: null, // set after a real POST /appointments/book.php succeeds; read by renderConfirmation
     cancelTargetId: null,
     queuePollTimer: null,
   };
+
+  function formatTime12(hhmm) {
+    var parts = String(hhmm).split(":");
+    var h = parseInt(parts[0], 10);
+    var m = parts[1];
+    var ampm = h >= 12 ? "PM" : "AM";
+    var h12 = h % 12;
+    if (h12 === 0) h12 = 12;
+    return h12 + ":" + m + " " + ampm;
+  }
 
   /* ==================================================================
      PAGE: AUTH (index.html)
@@ -303,17 +316,28 @@
 
       var btn = $("#login-submit");
       setSubmitting(btn, true, "Sign In");
-      // Simulated auth latency so the loading state is visible.
-      setTimeout(function () {
+
+      api.login({ email: email, password: password }).then(function (res) {
         setSubmitting(btn, false, "Sign In");
+
+        if (!res || !res.success) {
+          showAlert((res && res.message) || "Something went wrong. Please try again.");
+          return;
+        }
+
+        if (res.data.role !== "patient") {
+          showAlert("This login is for patients. Staff accounts use a different portal.");
+          return;
+        }
+
         Session.set({
-          id: "pt-mock-1",
-          name: email.indexOf("@") > -1 ? email.split("@")[0] : "Patient",
-          email: email.indexOf("@") > -1 ? email : email + "@example.com",
-          phone: "+91 90000 00000",
+          user_id: res.data.user_id,
+          patient_id: res.data.patient_id,
+          name: res.data.name,
+          email: email,
         });
         window.location.href = "dashboard.html";
-      }, 500);
+      });
     });
 
     $("#register-form").addEventListener("submit", function (evt) {
@@ -337,11 +361,29 @@
 
       var btn = $("#register-submit");
       setSubmitting(btn, true, "Create Account");
-      setTimeout(function () {
+
+      api.register({ full_name: name, email: email, phone: phone, password: password }).then(function (res) {
         setSubmitting(btn, false, "Create Account");
-        Session.set({ id: "pt-mock-new", name: name, email: email, phone: phone });
+
+        if (!res || !res.success) {
+          // errors is a { field: message } map on 422; message covers 409 duplicate email etc.
+          var msg = (res && res.message) || "Something went wrong. Please try again.";
+          if (res && res.errors) {
+            var firstField = Object.keys(res.errors)[0];
+            if (firstField) msg = res.errors[firstField];
+          }
+          showAlert(msg);
+          return;
+        }
+
+        Session.set({
+          user_id: res.data.user_id,
+          patient_id: res.data.patient_id,
+          name: name,
+          email: email,
+        });
         window.location.href = "dashboard.html";
-      }, 600);
+      });
     });
   }
 
@@ -350,23 +392,40 @@
      ================================================================== */
 
   function initDashboardPage() {
-    var session = Session.get();
-    if (!session) {
+    var cached = Session.get();
+    if (!cached) {
       window.location.href = "index.html";
       return;
     }
 
-    setupUserChrome(session);
-    setupNav();
-    setupDrawer();
-    setupModal();
-    setupProfileForm(session);
-    setupWalkinFlow();
-    setupCancelFlow();
-    setupNotifActions();
+    api.me().then(function (res) {
+      if (!res || !res.success || res.data.role !== "patient") {
+        Session.clear();
+        window.location.href = "index.html";
+        return;
+      }
 
-    window.addEventListener("hashchange", route);
-    route();
+      var session = {
+        user_id: res.data.user_id,
+        patient_id: res.data.patient_id,
+        name: res.data.name,
+        email: res.data.email,
+        phone: cached.phone,
+      };
+      Session.set(session);
+
+      setupUserChrome(session);
+      setupNav();
+      setupDrawer();
+      setupModal();
+      setupProfileForm(session);
+      setupWalkinFlow();
+      setupCancelFlow();
+      setupNotifActions();
+
+      window.addEventListener("hashchange", route);
+      route();
+    });
   }
 
   function currentViewFromHash() {
@@ -444,8 +503,10 @@
     $("#profile-avatar").textContent = initials(session.name);
 
     function doLogout() {
-      Session.clear();
-      window.location.href = "index.html";
+      api.logout().then(function () {
+        Session.clear();
+        window.location.href = "index.html";
+      });
     }
     $("#sidebar-logout").addEventListener("click", doLogout);
     $("#drawer-logout").addEventListener("click", doLogout);
@@ -544,62 +605,49 @@
     var chipsWrap = $("#clinic-filter-chips");
     var searchInput = $("#clinic-search");
 
-    var allDepartments = Array.from(
-      MockDB.clinics.reduce(function (set, c) { c.departments.forEach(function (d) { set.add(d); }); return set; }, new Set())
-    );
+    if (chipsWrap) chipsWrap.innerHTML = ""; // no per-clinic department data from /clinics/list.php to build chips from
 
-    var activeDept = null;
-
-    function paintChips() {
-      chipsWrap.innerHTML = "";
-      var allChip = el("button", {
-        class: "chip", type: "button", "aria-pressed": String(activeDept === null), text: "All",
-        onClick: function () { activeDept = null; paintChips(); paintList(); },
-      });
-      chipsWrap.appendChild(allChip);
-      allDepartments.forEach(function (dept) {
-        chipsWrap.appendChild(el("button", {
-          class: "chip", type: "button", "aria-pressed": String(activeDept === dept), text: dept,
-          onClick: function () { activeDept = dept; paintChips(); paintList(); },
-        }));
-      });
-    }
+    var allClinics = [];
 
     function paintList() {
       var q = searchInput.value.trim().toLowerCase();
-      var filtered = MockDB.clinics.filter(function (c) {
-        var matchesQuery = !q || c.name.toLowerCase().indexOf(q) > -1 || c.area.toLowerCase().indexOf(q) > -1;
-        var matchesDept = !activeDept || c.departments.indexOf(activeDept) > -1;
-        return matchesQuery && matchesDept;
+      var filtered = allClinics.filter(function (c) {
+        return !q || c.clinic_name.toLowerCase().indexOf(q) > -1 || (c.address || "").toLowerCase().indexOf(q) > -1;
       });
       container.setAttribute("aria-busy", "false");
       renderList(container, filtered, {
-        empty: { icon: iconSearch(), title: "No clinics found", body: "Try a different search or filter." },
+        empty: { icon: iconSearch(), title: "No clinics found", body: "Try a different search." },
         render: function (c) { return clinicRow(c); },
       });
     }
 
     searchInput.oninput = paintList;
-    // Simulated fetch latency for the initial list.
     container.setAttribute("aria-busy", "true");
     renderSkeleton(container, 4);
-    setTimeout(function () {
-      paintChips();
+
+    api.listClinics().then(function (res) {
+      if (!res || !res.success) {
+        container.setAttribute("aria-busy", "false");
+        renderList(container, [], { empty: { icon: iconSearch(), title: "Couldn't load clinics", body: (res && res.message) || "Please try again." } });
+        return;
+      }
+      allClinics = res.data.clinics || [];
       paintList();
-    }, 300);
+    });
   }
 
   function clinicRow(clinic) {
     var btn = el("button", { class: "row-card", type: "button" }, [
-      el("span", { class: "row-media", text: initials(clinic.name) }),
+      el("span", { class: "row-media", text: initials(clinic.clinic_name) }),
       el("span", { class: "row-body" }, [
-        el("span", { class: "row-title", text: clinic.name }),
-        el("span", { class: "row-sub", text: clinic.area + " · " + clinic.departments.join(", ") }),
+        el("span", { class: "row-title", text: clinic.clinic_name }),
+        el("span", { class: "row-sub", text: clinic.address || "" }),
       ]),
       chevronIcon(),
     ]);
     btn.addEventListener("click", function () {
-      State.booking.clinicId = clinic.id;
+      State.booking.clinicId = clinic.clinic_id;
+      State.booking.clinicName = clinic.clinic_name;
       navigateTo("doctors");
     });
     return btn;
@@ -608,37 +656,45 @@
   /* ---------------- Doctors ---------------- */
 
   function renderDoctors() {
-    var clinic = MockDB.clinicById(State.booking.clinicId) || MockDB.clinics[0];
-    State.booking.clinicId = clinic.id;
-    $("#doctors-clinic-name").textContent = clinic.name;
+    if (!State.booking.clinicId) {
+      navigateTo("clinics");
+      return;
+    }
+    $("#doctors-clinic-name").textContent = State.booking.clinicName || "";
 
     var container = $("#doctors-list");
     container.setAttribute("aria-busy", "true");
     renderSkeleton(container, 3);
 
-    setTimeout(function () {
+    api.listDoctors(State.booking.clinicId).then(function (res) {
       container.setAttribute("aria-busy", "false");
-      var docs = MockDB.doctorsByClinic(clinic.id);
-      renderList(container, docs, {
+      if (!res || !res.success) {
+        renderList(container, [], { empty: { icon: iconUser(), title: "Couldn't load doctors", body: (res && res.message) || "Please try again." } });
+        return;
+      }
+      renderList(container, res.data.doctors || [], {
         empty: { icon: iconUser(), title: "No doctors listed", body: "This clinic has no doctors available right now." },
         render: function (d) { return doctorRow(d); },
       });
-    }, 280);
+    });
   }
 
   function doctorRow(doctor) {
+    var displayName = doctor.doctor_name || doctor.doctor_code;
     var btn = el("button", { class: "row-card", type: "button" }, [
-      el("span", { class: "row-media", text: initials(doctor.name) }),
+      el("span", { class: "row-media", text: initials(displayName) }),
       el("span", { class: "row-body" }, [
-        el("span", { class: "row-title", text: doctor.name }),
-        el("span", { class: "row-sub", text: doctor.specialty + " · " + doctor.experience }),
+        el("span", { class: "row-title", text: displayName }),
+        el("span", { class: "row-sub", text: (doctor.specialization || doctor.department_name || "") + " · " + doctor.department_name }),
       ]),
       el("span", { class: "row-trailing" }, [
-        el("span", { class: "badge badge-neutral", text: "₹" + doctor.fee }),
+        el("span", { class: "badge badge-neutral", text: "₹" + doctor.consultation_fee }),
       ]),
     ]);
     btn.addEventListener("click", function () {
-      State.booking.doctorId = doctor.id;
+      State.booking.doctorId = doctor.doctor_id;
+      State.booking.doctorName = displayName;
+      State.booking.doctorSpecialization = doctor.specialization || doctor.department_name;
       State.booking.dateIso = null;
       State.booking.time = null;
       navigateTo("booking");
@@ -649,16 +705,17 @@
   /* ---------------- Booking ---------------- */
 
   function renderBooking() {
-    var doctor = MockDB.doctorById(State.booking.doctorId) || MockDB.doctors[0];
-    State.booking.doctorId = doctor.id;
-    var clinic = MockDB.clinicById(doctor.clinicId);
+    if (!State.booking.doctorId) {
+      navigateTo("clinics");
+      return;
+    }
 
-    $("#booking-doctor-name").textContent = doctor.name;
-    $("#booking-doctor-meta").textContent = doctor.specialty + " · " + (clinic ? clinic.name : "");
+    $("#booking-doctor-name").textContent = State.booking.doctorName || "";
+    $("#booking-doctor-meta").textContent = (State.booking.doctorSpecialization || "") + " · " + (State.booking.clinicName || "");
 
     var dateScroll = $("#booking-date-scroll");
     dateScroll.innerHTML = "";
-    var dates = MockDB.nextDates(10);
+    var dates = MockDB.nextDates(10); // pure date math, not mock business data — kept as-is
     if (!State.booking.dateIso) State.booking.dateIso = dates[0].iso;
 
     dates.forEach(function (d) {
@@ -681,30 +738,31 @@
     timeGrid.setAttribute("aria-busy", "true");
     timeGrid.innerHTML = "";
     for (var i = 0; i < 8; i++) timeGrid.appendChild(el("div", { class: "skeleton skeleton-line" }));
+    $("#booking-confirm-btn").disabled = true;
 
-    setTimeout(function () {
+    api.doctorSchedule(State.booking.doctorId, State.booking.dateIso).then(function (res) {
       timeGrid.setAttribute("aria-busy", "false");
       timeGrid.innerHTML = "";
-      var slots = MockDB.slotsFor(doctor.id, State.booking.dateIso);
-      slots.forEach(function (slot) {
-        var pressed = slot.time === State.booking.time;
+
+      if (!res || !res.success || !res.data.slots || res.data.slots.length === 0) {
+        timeGrid.appendChild(el("p", { class: "text-muted", text: "No slots available for this date." }));
+        return;
+      }
+
+      res.data.slots.forEach(function (rawTime) {
+        var label = formatTime12(rawTime);
+        var pressed = rawTime === State.booking.time;
         var btn = el("button", {
-          class: "time-slot", type: "button", "aria-pressed": String(pressed), text: slot.time,
+          class: "time-slot", type: "button", "aria-pressed": String(pressed), text: label,
         });
-        if (!slot.available) {
-          btn.disabled = true;
-          btn.setAttribute("aria-label", slot.time + ", unavailable");
-        } else {
-          btn.addEventListener("click", function () {
-            State.booking.time = slot.time;
-            $all(".time-slot", timeGrid).forEach(function (b) { b.setAttribute("aria-pressed", String(b === btn)); });
-            $("#booking-confirm-btn").disabled = false;
-          });
-        }
+        btn.addEventListener("click", function () {
+          State.booking.time = rawTime;
+          $all(".time-slot", timeGrid).forEach(function (b) { b.setAttribute("aria-pressed", String(b === btn)); });
+          $("#booking-confirm-btn").disabled = false;
+        });
         timeGrid.appendChild(btn);
       });
-      $("#booking-confirm-btn").disabled = !State.booking.time;
-    }, 260);
+    });
 
     var confirmBtn = $("#booking-confirm-btn");
     confirmBtn.onclick = function () {
@@ -712,52 +770,63 @@
       confirmBtn.disabled = true;
       confirmBtn.textContent = "Booking…";
       var reason = $("#booking-reason").value.trim();
-      setTimeout(function () {
-        var newAppt = {
-          id: "ap-" + Math.floor(1000 + Math.random() * 8999),
-          doctorId: doctor.id,
-          clinicId: clinic.id,
-          date: State.booking.dateIso,
-          time: State.booking.time,
-          status: "upcoming",
-          reason: reason || "General consultation",
-        };
-        MockDB.appointments.unshift(newAppt);
-        State.lastConfirmedAppointmentId = newAppt.id;
+
+      api.bookAppointment({
+        doctor_id: State.booking.doctorId,
+        appointment_date: State.booking.dateIso,
+        slot_time: State.booking.time,
+        reason: reason || undefined,
+      }).then(function (res) {
         confirmBtn.disabled = false;
         confirmBtn.textContent = "Confirm Booking";
+
+        if (!res || !res.success) {
+          toast((res && res.message) || "Couldn't book that slot. Please try another.", "danger");
+          return;
+        }
+
+        State.lastBooking = {
+          appointment_id: res.data.appointment_id,
+          token_id: res.data.token_id,
+          token_number: res.data.token_number,
+          doctorName: State.booking.doctorName,
+          clinicName: State.booking.clinicName,
+          dateIso: State.booking.dateIso,
+          time: State.booking.time,
+          reason: reason || "General consultation",
+        };
+        try { localStorage.setItem("ql_patient_active_token_id", String(res.data.token_id)); } catch (e) {}
+
         $("#booking-reason").value = "";
         toast("Appointment booked", "success");
         navigateTo("confirmation");
-      }, 500);
+      });
     };
   }
 
   /* ---------------- Confirmation ---------------- */
 
   function renderConfirmation() {
-    var appt = MockDB.appointments.filter(function (a) { return a.id === State.lastConfirmedAppointmentId; })[0];
+    var b = State.lastBooking;
     var box = $("#confirmation-summary");
     var refEl = $("#confirmation-ref");
 
-    if (!appt) {
+    if (!b) {
       refEl.textContent = "—";
       box.innerHTML = "";
       box.appendChild(el("p", { class: "text-muted text-center", text: "No recent booking to show. Book an appointment to see its confirmation here." }));
       return;
     }
 
-    var doctor = MockDB.doctorById(appt.doctorId);
-    var clinic = MockDB.clinicById(appt.clinicId);
-    refEl.textContent = appt.id.toUpperCase();
+    refEl.textContent = "Token #" + b.token_number;
 
     box.innerHTML = "";
     [
-      ["Doctor", doctor ? doctor.name : "—"],
-      ["Clinic", clinic ? clinic.name : "—"],
-      ["Date", formatDate(appt.date)],
-      ["Time", appt.time],
-      ["Reason", appt.reason],
+      ["Doctor", b.doctorName || "—"],
+      ["Clinic", b.clinicName || "—"],
+      ["Date", formatDate(b.dateIso)],
+      ["Time", formatTime12(b.time)],
+      ["Reason", b.reason],
     ].forEach(function (pair) {
       box.appendChild(el("div", { class: "summary-row" }, [
         el("span", { class: "s-label", text: pair[0] }),
