@@ -59,11 +59,27 @@
             'use strict';
 
             var currentFilter = 'upcoming';
+            var allAppointments = [];
 
             document.addEventListener('doctor-auth-ready', function () {
                 wireFilterTabs();
-                renderAppointments();
+                loadAppointments();
             });
+
+            function loadAppointments() {
+                var wrap = document.getElementById('appointmentsListWrap');
+                wrap.setAttribute('aria-busy', 'true');
+                window.DoctorApi.doctorAppointments().then(function (result) {
+                    wrap.setAttribute('aria-busy', 'false');
+                    if (!result || !result.success) {
+                        wrap.innerHTML = '<div class="form-alert" role="alert">'
+                            + DoctorUI.escapeHtml(result && result.message || 'Unable to load appointments.') + '</div>';
+                        return;
+                    }
+                    allAppointments = result.data.appointments || [];
+                    renderAppointments();
+                });
+            }
 
             function wireFilterTabs() {
                 var tabs = document.querySelectorAll('#filterTabs .filter-tab');
@@ -96,8 +112,7 @@
             }
 
             function renderAppointments() {
-                var all = [];
-                var filtered = filterAppointments(all).sort(function (a, b) {
+                var filtered = filterAppointments(allAppointments).sort(function (a, b) {
                     var da = a.appointment_date + ' ' + a.appointment_time;
                     var db = b.appointment_date + ' ' + b.appointment_time;
                     return currentFilter === 'past' ? (da < db ? 1 : -1) : (da > db ? 1 : -1);

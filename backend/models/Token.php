@@ -132,4 +132,35 @@ class Token
         $stmt->execute(['doctor_id' => $doctorId, 'date' => $date]);
         return $stmt->fetchAll();
     }
+
+    /**
+     * A doctor's own appointments across ALL dates (today, upcoming, past),
+     * for the doctor Appointments tab. Sourced from tokens rather than the
+     * appointments table alone, since walk-ins have no appointments row —
+     * this way both appointment_type values ("appointment"/"walkin") are
+     * covered by one list, matching what the doctor Appointments page
+     * expects (appointment_date, appointment_time, patient_name,
+     * appointment_type, reason, status).
+     */
+    public static function listForDoctorAllDates(int $doctorId): array
+    {
+        $stmt = get_db_connection()->prepare(
+            "SELECT t.token_id,
+                    t.token_date AS appointment_date,
+                    COALESCE(a.appointment_time, TIME(t.created_at)) AS appointment_time,
+                    u.full_name AS patient_name,
+                    t.token_type AS appointment_type,
+                    COALESCE(a.reason, '') AS reason,
+                    qs.current_status AS status
+             FROM tokens t
+             JOIN patients p ON p.patient_id = t.patient_id
+             LEFT JOIN users u ON u.user_id = p.user_id
+             LEFT JOIN appointments a ON a.appointment_id = t.appointment_id
+             LEFT JOIN queue_status qs ON qs.token_id = t.token_id
+             WHERE t.doctor_id = :doctor_id
+             ORDER BY t.token_date DESC, appointment_time DESC"
+        );
+        $stmt->execute(['doctor_id' => $doctorId]);
+        return $stmt->fetchAll();
+    }
 }

@@ -3,3 +3,4 @@ backend/logs/*.log
 .DS_Store
 Thumbs.db
 .continue/
+/backend/config.local.php.backup

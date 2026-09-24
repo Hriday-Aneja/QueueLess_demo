@@ -109,8 +109,8 @@
         },
 
         priorityBadgeHtml: function (priority) {
-            var cls = priority === 'urgent' ? 'badge-urgent' : 'badge-normal';
-            var label = priority === 'urgent' ? 'Urgent' : 'Normal';
+            var cls = priority === 'emergency' ? 'badge-urgent' : (priority === 'priority' ? 'badge-waiting' : 'badge-normal');
+            var label = priority === 'emergency' ? 'Emergency' : (priority === 'priority' ? 'Priority' : 'Normal');
             return '<span class="badge ' + cls + '">' + label + '</span>';
         },
 

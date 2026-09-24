@@ -147,16 +147,39 @@
                         return;
                     }
 
-                    document.getElementById('consultationLayout').classList.remove('hidden');
-                    renderPatient(token);
-                    renderHistory();
-                    wireActions(token);
+                    if (token.current_status === 'consulting') {
+                        showConsultation(token);
+                        return;
+                    }
+
+                    // Reached via the dashboard queue table's "View" link, which exists
+                    // on every row — not just the one currently being consulted. Start
+                    // the consultation for real before letting the doctor write notes.
+                    window.DoctorApi.startConsultation(tokenId).then(function (startResult) {
+                        if (!startResult || !startResult.success) {
+                            document.getElementById('consultationSubtitle').textContent = 'Unable to start this consultation';
+                            document.getElementById('notFoundState').classList.remove('hidden');
+                            document.getElementById('notFoundState').textContent = startResult && startResult.message
+                                ? startResult.message
+                                : 'This patient cannot be seen right now.';
+                            return;
+                        }
+                        token.current_status = 'consulting';
+                        showConsultation(token);
+                    });
                 });
             });
 
+            function showConsultation(token) {
+                document.getElementById('consultationLayout').classList.remove('hidden');
+                renderPatient(token);
+                renderHistory();
+                wireActions(token);
+            }
+
             function renderPatient(token) {
                 document.getElementById('consultationSubtitle').textContent = 'Token #' + token.token_number + ' \u00b7 ' + DoctorUI.escapeHtml(token.patient_name);
-                document.getElementById('consultationStatusBadge').innerHTML = DoctorUI.statusBadgeHtml(token.status);
+                document.getElementById('consultationStatusBadge').innerHTML = DoctorUI.statusBadgeHtml(token.current_status);
 
                 document.getElementById('patientAvatar').textContent = DoctorUI.initials(token.patient_name);
                 document.getElementById('patientName').textContent = token.patient_name;

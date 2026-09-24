@@ -93,6 +93,7 @@ const Api = {
 
   // ---- Doctor ----
   doctorDashboard: () => apiGet('/doctors/dashboard.php'),
+  doctorAppointments: () => apiGet('/doctors/appointments.php'),
 
   // ---- Notifications ----
   listNotifications: () => apiGet('/notifications/list.php'),
@@ -170,6 +171,7 @@ window.QueueLess.ApiClient = class ApiClient {
 
   // ---- Doctor ----
   doctorDashboard() { return Api.doctorDashboard(); }
+  doctorAppointments() { return Api.doctorAppointments(); }
 
   // ---- Notifications ----
   listNotifications() { return Api.listNotifications(); }
