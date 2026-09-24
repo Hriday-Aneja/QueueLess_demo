@@ -45,9 +45,9 @@
                                 <tr>
                                     <th>Token</th>
                                     <th>Patient</th>
-                                    <th>Time</th>
+                                    <th>Position</th>
                                     <th>Type</th>
-                                    <th>Reason</th>
+                                    <th>ETA</th>
                                     <th>Status</th>
                                     <th></th>
                                 </tr>
@@ -66,36 +66,54 @@
         </div>
     </div>
 
+    <script src="../shared/js/api-client.js"></script>
     <script src="js/doctor-data.js"></script>
     <script src="js/doctor.js"></script>
     <script>
         (function () {
             'use strict';
 
-            document.addEventListener('DOMContentLoaded', function () {
-                if (!window.MockAuth || !MockAuth.isLoggedIn()) return; // guard() already redirects
+            var pollTimer = null;
 
-                renderDateLabel();
-                renderStats();
-                renderPatientCards();
-                renderQueueTable();
+            document.addEventListener('doctor-auth-ready', loadDashboard);
+            window.addEventListener('beforeunload', function () {
+                if (pollTimer) window.clearTimeout(pollTimer);
             });
 
-            function renderDateLabel() {
-                var el = document.getElementById('dashboardDateLabel');
-                var todayIso = new Date().toISOString().slice(0, 10);
-                el.textContent = DoctorUI.formatDate(todayIso) + ' · Today\u2019s overview';
+            function loadDashboard() {
+                window.DoctorApi.doctorDashboard().then(function (result) {
+                    if (!result || !result.success) {
+                        document.getElementById('patientCardsRow').innerHTML = '<div class="form-alert" role="alert">'
+                            + DoctorUI.escapeHtml(result && result.message || 'Unable to load today\'s queue.') + '</div>';
+                        schedulePoll();
+                        return;
+                    }
+
+                    var data = result.data;
+                    window.DoctorSession.set(Object.assign({}, window.DoctorSession.get() || {}, data.doctor || {}));
+                    window.renderDoctorShell('dashboard');
+                    renderDateLabel(data.date);
+                    renderStats(data);
+                    renderPatientCards(data);
+                    renderQueueTable(data.queue || []);
+                    schedulePoll();
+                });
             }
 
-            function renderStats() {
-                var waiting = DoctorMockData.getWaitingCount();
-                var completed = DoctorMockData.getCompletedCount();
-                var total = DoctorMockData.getTodayQueue().length;
+            function schedulePoll() {
+                if (pollTimer) window.clearTimeout(pollTimer);
+                pollTimer = window.setTimeout(loadDashboard, 8000);
+            }
 
+            function renderDateLabel(date) {
+                document.getElementById('dashboardDateLabel').textContent = DoctorUI.formatDate(date) + ' · Today\u2019s overview';
+            }
+
+            function renderStats(data) {
                 document.getElementById('dashboardStats').innerHTML = [
-                    statPill(total, 'Total'),
-                    statPill(waiting, 'Waiting'),
-                    statPill(completed, 'Completed')
+                    statPill(data.today_appointments, 'Appointments'),
+                    statPill(data.waiting_count, 'Waiting'),
+                    statPill((data.queue || []).length, 'In Queue')
                 ].join('');
             }
 
@@ -103,9 +121,9 @@
                 return '<div class="stat-pill"><span class="stat-value">' + value + '</span><span class="stat-label">' + label + '</span></div>';
             }
 
-            function renderPatientCards() {
-                var current = DoctorMockData.getCurrentPatient();
-                var next = DoctorMockData.getNextPatient();
+            function renderPatientCards(data) {
+                var current = data.current_patient;
+                var next = data.next_patient;
                 var row = document.getElementById('patientCardsRow');
 
                 row.innerHTML = patientCardHtml('Current Patient', current, 'current')
@@ -114,21 +132,32 @@
                 var startBtn = document.getElementById('startConsultBtn');
                 if (startBtn) {
                     startBtn.addEventListener('click', function () {
-                        window.location.href = 'consultation.html?token_id=' + startBtn.getAttribute('data-token-id');
+                        if (data.current_patient && data.current_patient.current_status === 'consulting') {
+                            window.location.href = 'consultation.html?token_id=' + startBtn.getAttribute('data-token-id');
+                            return;
+                        }
+                        startConsultation(startBtn.getAttribute('data-token-id'));
                     });
                 }
 
                 var callNextBtn = document.getElementById('callNextBtn');
                 if (callNextBtn) {
                     callNextBtn.addEventListener('click', function () {
-                        var tokenId = callNextBtn.getAttribute('data-token-id');
-                        // Local-only mock transition: waiting -> in_progress.
-                        DoctorMockData.setTokenStatus(tokenId, 'in_progress');
-                        renderStats();
-                        renderPatientCards();
-                        renderQueueTable();
+                        startConsultation(callNextBtn.getAttribute('data-token-id'));
                     });
                 }
+            }
+
+            function startConsultation(tokenId) {
+                window.DoctorApi.startConsultation(tokenId).then(function (result) {
+                    if (!result || !result.success) {
+                        document.getElementById('patientCardsRow').innerHTML = '<div class="form-alert" role="alert">'
+                            + DoctorUI.escapeHtml(result && result.message || 'Unable to start consultation.') + '</div>';
+                        loadDashboard();
+                        return;
+                    }
+                    window.location.href = 'consultation.html?token_id=' + tokenId;
+                });
             }
 
             function patientCardHtml(title, token, variant) {
@@ -151,22 +180,21 @@
                     + '<div class="card patient-card patient-card-' + variant + '">'
                     + '<div class="card-title-row">'
                     + '<h3 class="card-title">' + title + '</h3>'
-                    + DoctorUI.statusBadgeHtml(token.status)
+                    + DoctorUI.statusBadgeHtml(token.current_status)
                     + '</div>'
                     + '<div class="patient-card-body">'
                     + '<span class="patient-token-no">#' + token.token_number + '</span>'
                     + '<div>'
                     + '<p class="patient-name">' + DoctorUI.escapeHtml(token.patient_name) + '</p>'
-                    + '<p class="patient-meta">' + token.patient_age + ' yrs \u00b7 ' + DoctorUI.escapeHtml(token.patient_gender) + ' \u00b7 ' + token.appointment_time + '</p>'
-                    + '<p class="patient-reason">' + DoctorUI.escapeHtml(token.reason) + '</p>'
+                    + '<p class="patient-meta">' + (token.token_type === 'walkin' ? 'Walk-in' : 'Appointment') + ' \u00b7 Queue position ' + token.queue_position + '</p>'
+                    + '<p class="patient-reason">Estimated wait: ' + token.estimated_wait_minutes + ' minutes</p>'
                     + '</div>'
                     + '</div>'
                     + '<div class="patient-card-actions">' + actionHtml + '</div>'
                     + '</div>';
             }
 
-            function renderQueueTable() {
-                var queue = DoctorMockData.getTodayQueue().sort(function (a, b) { return a.token_number - b.token_number; });
+            function renderQueueTable(queue) {
                 var tbody = document.getElementById('queueTableBody');
                 var emptyState = document.getElementById('queueEmptyState');
                 var countLabel = document.getElementById('queueCountLabel');
@@ -185,10 +213,10 @@
                         + '<tr>'
                         + '<td>#' + t.token_number + '</td>'
                         + '<td>' + DoctorUI.escapeHtml(t.patient_name) + '</td>'
-                        + '<td>' + t.appointment_time + '</td>'
+                        + '<td>' + t.queue_position + '</td>'
                         + '<td class="text-muted">' + (t.token_type === 'walkin' ? 'Walk-in' : 'Appointment') + '</td>'
-                        + '<td class="text-muted">' + DoctorUI.escapeHtml(t.reason) + '</td>'
-                        + '<td>' + DoctorUI.statusBadgeHtml(t.status) + '</td>'
+                        + '<td class="text-muted">' + t.estimated_wait_minutes + ' min wait</td>'
+                        + '<td>' + DoctorUI.statusBadgeHtml(t.current_status) + '</td>'
                         + '<td><a href="consultation.html?token_id=' + t.token_id + '" class="table-link">View</a></td>'
                         + '</tr>';
                 }).join('');

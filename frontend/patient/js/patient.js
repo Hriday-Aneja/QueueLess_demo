@@ -5,9 +5,8 @@
 
    Auth (login/register/session guard/logout) is wired to the real
    backend/api endpoints — see initAuthPage() and initDashboardPage().
-   Every other view (clinics, doctors, booking, live queue, appointments,
-   history, notifications) still renders from MockDB below; those are the
-   next integration phase and are NOT yet connected to the real backend.
+  Clinics, doctors, booking, live queue, and walk-in retain their existing
+  behavior. Appointments, history, and notifications use the real API.
    ========================================================================== */
 
 (function () {
@@ -18,7 +17,7 @@
      ------------------------------------------------------------------ */
 
   var API_BASE = "../../backend/api"; // informational only — Api.* in api-client.js owns the real base URL
-  var MOCK_MODE = false; // Auth is real now. Booking/queue/appointments views below still read MockDB.
+  var MOCK_MODE = false;
   var SESSION_KEY = "ql_patient_session";
 
   var api = new window.QueueLess.ApiClient({ baseUrl: API_BASE, mockMode: MOCK_MODE });
@@ -244,6 +243,8 @@
     lastBooking: null, // set after a real POST /appointments/book.php succeeds; read by renderConfirmation
     cancelTargetId: null,
     queuePollTimer: null,
+    appointments: null,
+    notifications: null,
   };
 
   function formatTime12(hhmm) {
@@ -545,8 +546,8 @@
   }
 
   function updateNavBadges() {
-    var upcomingCount = MockDB.appointments.filter(function (a) { return a.status === "upcoming"; }).length;
-    var unreadCount = MockDB.notifications.filter(function (n) { return !n.read; }).length;
+    var upcomingCount = (State.appointments || []).filter(function (a) { return a.status === "scheduled"; }).length;
+    var unreadCount = (State.notifications || []).filter(function (n) { return !n.is_read; }).length;
 
     var apBadge = $("#nav-badge-appointments");
     if (apBadge) {
@@ -566,35 +567,74 @@
     $("#desktop-notif-btn") && $("#desktop-notif-btn").addEventListener("click", function () { navigateTo("notifications"); }, { once: true });
   }
 
+  /* ---------------- Active token (real) ---------------- */
+
+  function getActiveTokenId() {
+    if (State.lastBooking && State.lastBooking.token_id) return State.lastBooking.token_id;
+    try {
+      var stored = localStorage.getItem("ql_patient_active_token_id");
+      return stored ? parseInt(stored, 10) : null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function clearActiveTokenId() {
+    try { localStorage.removeItem("ql_patient_active_token_id"); } catch (e) {}
+  }
+
+  var REAL_STATUS_LABELS = {
+    waiting: "Waiting", next: "You're next", arriving: "On my way",
+    checked_in: "Checked in", consulting: "With the doctor", completed: "Completed",
+    cancelled: "Cancelled", no_show: "No show", late: "Late arrival", requeue: "Back in queue",
+  };
+  var REAL_STATUS_BADGE_CLASS = {
+    waiting: "badge-neutral", next: "badge-accent", arriving: "badge-accent",
+    checked_in: "badge-warning", consulting: "badge-success", completed: "badge-success",
+    cancelled: "badge-neutral", no_show: "badge-neutral", late: "badge-warning", requeue: "badge-neutral",
+  };
+  function realStatusLabel(status) { return REAL_STATUS_LABELS[status] || status; }
+  function realStatusBadgeClass(status) { return REAL_STATUS_BADGE_CLASS[status] || "badge-neutral"; }
+
   /* ---------------- Dashboard home ---------------- */
 
   function renderDashboardHome() {
     var slot = $("#dashboard-status-slot");
     slot.innerHTML = "";
-    if (MockDB.currentToken) {
-      var t = MockDB.currentToken;
-      var clinic = MockDB.clinicById(t.clinicId);
-      var card = el("div", { class: "status-card" }, [
-        el("div", {}, [
-          el("div", { class: "status-label", text: "Active token · " + (clinic ? clinic.name : "") }),
-          el("div", { class: "status-token", text: t.tokenNo }),
-          el("div", { class: "status-meta", text: t.position + " ahead of you · ~" + t.estWaitMins + " min wait" }),
-        ]),
-        el("button", { class: "btn btn-accent btn-sm", type: "button", "data-nav": "livequeue", text: "Track" }),
-      ]);
-      slot.appendChild(card);
+
+    var tokenId = getActiveTokenId();
+    if (tokenId) {
+      api.queueStatus(tokenId).then(function (res) {
+        if (!res || !res.success) { clearActiveTokenId(); return; }
+        var d = res.data;
+        var card = el("div", { class: "status-card" }, [
+          el("div", {}, [
+            el("div", { class: "status-label", text: "Active token · " + realStatusLabel(d.status) }),
+            el("div", { class: "status-token", text: "#" + d.my_token }),
+            el("div", { class: "status-meta", text: d.patients_ahead + " ahead of you · ~" + d.estimated_wait_minutes + " min wait" }),
+          ]),
+          el("button", { class: "btn btn-accent btn-sm", type: "button", "data-nav": "livequeue", text: "Track" }),
+        ]);
+        slot.appendChild(card);
+      });
     }
 
-    var upcoming = MockDB.appointments.filter(function (a) { return a.status === "upcoming"; });
-    renderList($("#dashboard-upcoming-list"), upcoming, {
-      empty: { icon: iconCalendar(), title: "No upcoming appointments", body: "Book a visit to see it here.", actionLabel: "Book Appointment", actionNav: "clinics" },
-      render: function (a) { return appointmentRow(a, { clickable: true }); },
+    renderSkeleton($("#dashboard-upcoming-list"), 2);
+    renderSkeleton($("#dashboard-notif-list"), 2);
+
+    loadAppointmentHistory(function (appointments) {
+      var upcoming = appointments.filter(function (a) { return a.status === "scheduled"; });
+      renderList($("#dashboard-upcoming-list"), upcoming, {
+        empty: { icon: iconCalendar(), title: "No upcoming appointments", body: "Book a visit to see it here.", actionLabel: "Book Appointment", actionNav: "clinics" },
+        render: function (a) { return appointmentRow(a, { clickable: true }); },
+      });
     });
 
-    var recentNotifs = MockDB.notifications.slice(0, 3);
-    renderList($("#dashboard-notif-list"), recentNotifs, {
-      empty: { icon: iconBell(), title: "No notifications yet", body: "We'll let you know when something changes." },
-      render: function (n) { return notificationRow(n); },
+    loadNotifications(function (notifications) {
+      renderList($("#dashboard-notif-list"), notifications.slice(0, 3), {
+        empty: { icon: iconBell(), title: "No notifications yet", body: "We'll let you know when something changes." },
+        render: function (n) { return notificationRow(n); },
+      });
     });
   }
 
@@ -837,6 +877,8 @@
 
   /* ---------------- Walk-in ---------------- */
 
+  // Patient walk-in creation is intentionally not wired: tokens/walkin.php is
+  // restricted to reception/admin roles. Walk-in tokens are created at reception.
   function renderWalkinForm() {
     var clinicSelect = $("#walkin-clinic");
     var deptSelect = $("#walkin-department");
@@ -907,35 +949,48 @@
     container.innerHTML = "";
     container.appendChild(el("div", { class: "skeleton skeleton-card" }));
 
-    setTimeout(function () {
+    var tokenId = getActiveTokenId();
+    if (!tokenId) {
       container.setAttribute("aria-busy", "false");
       container.innerHTML = "";
-      var t = MockDB.currentToken;
-      if (!t) {
+      container.appendChild(emptyState({
+        icon: iconTicket(), title: "No active token",
+        body: "Book an appointment to get a token.",
+        actionLabel: "Book Appointment", actionNav: "clinics",
+      }));
+      return;
+    }
+
+    api.queueStatus(tokenId).then(function (res) {
+      container.setAttribute("aria-busy", "false");
+      container.innerHTML = "";
+
+      if (!res || !res.success) {
+        clearActiveTokenId();
         container.appendChild(emptyState({
           icon: iconTicket(), title: "No active token",
-          body: "Check in for a walk-in or book an appointment to get a token.",
-          actionLabel: "Walk-in Check-In", actionNav: "walkin",
+          body: "Book an appointment to get a token.",
+          actionLabel: "Book Appointment", actionNav: "clinics",
         }));
         return;
       }
-      var clinic = MockDB.clinicById(t.clinicId);
+
+      var d = res.data;
       var card = el("div", { class: "card card-raised text-center" }, [
-        el("div", { class: "text-muted", text: clinic ? clinic.name + " · " + t.department : t.department }),
         el("div", { class: "token-hero-circle" }, [
           el("span", { class: "th-label", text: "Your token" }),
-          el("span", { class: "th-value", text: t.tokenNo }),
+          el("span", { class: "th-value", text: "#" + d.my_token }),
         ]),
-        el("span", { class: "badge " + statusBadgeClass(t.status), text: statusLabel(t.status) }),
+        el("span", { class: "badge " + realStatusBadgeClass(d.status), text: realStatusLabel(d.status) }),
         el("div", { class: "queue-stats" }, [
-          statBlock(String(t.totalAhead), "Ahead of you"),
-          statBlock(String(t.totalInQueue), "In queue"),
-          statBlock("~" + t.estWaitMins + " min", "Est. wait"),
+          statBlock(String(d.patients_ahead), "Ahead of you"),
+          statBlock(d.current_token ? "#" + d.current_token : "—", "Now serving"),
+          statBlock("~" + d.estimated_wait_minutes + " min", "Est. wait"),
         ]),
         el("button", { class: "btn btn-primary btn-block", type: "button", style: "margin-top:18px;", text: "View Live Queue", "data-nav": "livequeue" }),
       ]);
       container.appendChild(card);
-    }, 300);
+    });
   }
 
   function statBlock(value, label) {
@@ -945,13 +1000,6 @@
     ]);
   }
 
-  function statusBadgeClass(status) {
-    return { waiting: "badge-neutral", "on-my-way": "badge-accent", called: "badge-warning", "in-consultation": "badge-success" }[status] || "badge-neutral";
-  }
-  function statusLabel(status) {
-    return { waiting: "Waiting", "on-my-way": "On my way", called: "You're called", "in-consultation": "In consultation" }[status] || "Waiting";
-  }
-
   /* ---------------- Live queue ---------------- */
 
   function renderLiveQueue() {
@@ -959,88 +1007,89 @@
     container.setAttribute("aria-busy", "true");
     container.innerHTML = "";
     container.appendChild(el("div", { class: "skeleton skeleton-card" }));
-
-    setTimeout(function () {
-      container.setAttribute("aria-busy", "false");
-      paintLiveQueue();
-    }, 300);
+    paintLiveQueue();
   }
 
   function paintLiveQueue() {
     var container = $("#livequeue-content");
-    var t = MockDB.currentToken;
-    container.innerHTML = "";
+    var tokenId = getActiveTokenId();
 
-    if (!t) {
+    if (!tokenId) {
+      container.setAttribute("aria-busy", "false");
+      container.innerHTML = "";
       container.appendChild(emptyState({
         icon: iconClock(), title: "You're not in a queue right now",
-        body: "Check in for a walk-in or arrive for a booked appointment to join the live queue.",
-        actionLabel: "Walk-in Check-In", actionNav: "walkin",
+        body: "Book an appointment to join the live queue.",
+        actionLabel: "Book Appointment", actionNav: "clinics",
       }));
       return;
     }
 
-    var pct = Math.max(6, 100 - (t.position / Math.max(t.totalInQueue, 1)) * 100);
+    api.queueStatus(tokenId).then(function (res) {
+      container.setAttribute("aria-busy", "false");
+      container.innerHTML = "";
 
-    var hero = el("div", { class: "queue-hero" }, [
-      el("div", { class: "qh-position", text: "#" + t.position }),
-      el("div", { class: "qh-position-label", text: "your position in line" }),
-      el("div", { class: "queue-progress" }, [
-        el("div", { class: "queue-progress-fill", style: "width:" + pct + "%;" }),
-      ]),
-      el("div", { class: "queue-stats" }, [
-        statBlock(t.tokenNo, "Your token"),
-        statBlock("~" + t.estWaitMins + " min", "Est. wait"),
-        statBlock(statusLabel(t.status), "Status"),
-      ]),
-    ]);
-    container.appendChild(hero);
+      if (!res || !res.success) {
+        clearActiveTokenId();
+        container.appendChild(emptyState({
+          icon: iconClock(), title: "You're not in a queue right now",
+          body: "Book an appointment to join the live queue.",
+          actionLabel: "Book Appointment", actionNav: "clinics",
+        }));
+        return;
+      }
 
-    var onMyWayBtn = el("button", {
-      class: "btn btn-accent btn-block", type: "button", style: "margin-top:16px;",
-      text: t.status === "on-my-way" ? "We've notified the clinic ✓" : "I'm On My Way",
-    });
-    if (t.status === "on-my-way" || t.status === "called" || t.status === "in-consultation") {
-      onMyWayBtn.disabled = true;
-    } else {
-      onMyWayBtn.addEventListener("click", function () {
-        onMyWayBtn.disabled = true;
-        onMyWayBtn.textContent = "Notifying clinic…";
-        setTimeout(function () {
-          t.status = "on-my-way";
-          toast("Clinic notified that you're on your way", "success");
-          paintLiveQueue();
-        }, 450);
+      var d = res.data;
+
+      var hero = el("div", { class: "queue-hero" }, [
+        el("div", { class: "qh-position", text: String(d.patients_ahead) }),
+        el("div", { class: "qh-position-label", text: d.patients_ahead === 1 ? "patient ahead of you" : "patients ahead of you" }),
+        el("div", { class: "queue-stats" }, [
+          statBlock("#" + d.my_token, "Your token"),
+          statBlock("~" + d.estimated_wait_minutes + " min", "Est. wait"),
+          statBlock(realStatusLabel(d.status), "Status"),
+        ]),
+      ]);
+      container.appendChild(hero);
+
+      var canGo = d.status === "waiting" || d.status === "next";
+      var onMyWayBtn = el("button", {
+        class: "btn btn-accent btn-block", type: "button", style: "margin-top:16px;",
+        text: d.status === "arriving" ? "We've notified the clinic ✓" : "I'm On My Way",
       });
-    }
-    container.appendChild(onMyWayBtn);
+      if (!canGo) {
+        onMyWayBtn.disabled = true;
+      } else {
+        onMyWayBtn.addEventListener("click", function () {
+          onMyWayBtn.disabled = true;
+          onMyWayBtn.textContent = "Notifying clinic…";
+          api.onMyWay(tokenId).then(function (res2) {
+            if (!res2 || !res2.success) {
+              onMyWayBtn.disabled = false;
+              onMyWayBtn.textContent = "I'm On My Way";
+              toast((res2 && res2.message) || "Couldn't update status. Please try again.", "danger");
+              return;
+            }
+            toast("Clinic notified that you're on your way", "success");
+            paintLiveQueue();
+          });
+        });
+      }
+      container.appendChild(onMyWayBtn);
 
-    var list = el("div", { class: "queue-list" });
-    var start = Math.max(1, t.position - 2);
-    for (var pos = start; pos <= Math.min(t.totalInQueue, start + 5); pos++) {
-      var isYou = pos === t.position;
-      list.appendChild(el("div", { class: "queue-list-item" + (isYou ? " is-you" : "") }, [
-        el("span", { class: "qli-pos", text: String(pos) }),
-        el("span", { text: isYou ? "You (" + t.tokenNo + ")" : "Patient " + pos }),
-      ]));
-    }
-    container.appendChild(list);
+      if (d.status === "completed") {
+        clearActiveTokenId();
+      }
+    });
   }
 
   function startQueuePolling() {
     stopQueuePolling();
-    // Mock a slowly-moving queue so the "live" behaviour is visible without a backend.
     State.queuePollTimer = setInterval(function () {
-      var t = MockDB.currentToken;
-      if (!t || currentViewFromHash() !== "livequeue") return;
-      if (t.position > 1 && Math.random() < 0.35) {
-        t.position -= 1;
-        t.totalAhead = Math.max(0, t.position - 1);
-        t.estWaitMins = Math.max(1, t.estWaitMins - 4);
-        paintLiveQueue();
-        updateNavBadges();
-      }
-    }, 6000);
+      if (currentViewFromHash() !== "livequeue") return;
+      if (!getActiveTokenId()) return;
+      paintLiveQueue();
+    }, 8000);
   }
   function stopQueuePolling() {
     if (State.queuePollTimer) {
@@ -1051,39 +1100,49 @@
 
   /* ---------------- Appointments ---------------- */
 
+  function loadAppointmentHistory(onSuccess) {
+    api.appointmentHistory().then(function (res) {
+      if (!res || !res.success) {
+        toast((res && res.message) || "Couldn't load appointments. Please try again.", "danger");
+        return;
+      }
+      State.appointments = res.data.appointments || [];
+      updateNavBadges();
+      if (onSuccess) onSuccess(State.appointments);
+    });
+  }
+
   function renderAppointments() {
     var container = $("#appointments-list");
     container.setAttribute("aria-busy", "true");
     renderSkeleton(container, 3);
-    setTimeout(function () {
+    loadAppointmentHistory(function (appointments) {
       container.setAttribute("aria-busy", "false");
-      var upcoming = MockDB.appointments.filter(function (a) { return a.status === "upcoming"; });
+      var upcoming = appointments.filter(function (a) { return a.status === "scheduled"; });
       renderList(container, upcoming, {
         empty: { icon: iconCalendar(), title: "No upcoming appointments", body: "Book an appointment with a clinic near you.", actionLabel: "Book Appointment", actionNav: "clinics" },
         render: function (a) { return appointmentRow(a, { cancellable: true }); },
       });
-    }, 280);
+    });
   }
 
   function appointmentRow(appt, opts) {
     opts = opts || {};
-    var doctor = MockDB.doctorById(appt.doctorId);
-    var clinic = MockDB.clinicById(appt.clinicId);
     var row = el("div", { class: "row-card", style: "cursor:default;" }, [
-      el("span", { class: "row-media", text: initials(doctor ? doctor.name : "?") }),
+      el("span", { class: "row-media", text: initials(appt.doctor_code) }),
       el("span", { class: "row-body" }, [
-        el("span", { class: "row-title", text: doctor ? doctor.name : "Doctor" }),
-        el("span", { class: "row-sub", text: (clinic ? clinic.name + " · " : "") + formatDate(appt.date) + " · " + appt.time }),
+        el("span", { class: "row-title", text: appt.doctor_code }),
+        el("span", { class: "row-sub", text: appt.department_name + " · " + formatDate(appt.appointment_date) + " · " + formatTime12(appt.appointment_time) }),
       ]),
     ]);
     var trailing = el("span", { class: "row-trailing" });
     trailing.appendChild(statusBadgeForAppt(appt.status));
-    if (opts.cancellable && appt.status === "upcoming") {
+    if (opts.cancellable && appt.status === "scheduled") {
       trailing.appendChild(el("button", {
         class: "btn btn-sm btn-danger-outline", type: "button", text: "Cancel",
         onClick: function (evt) {
           evt.stopPropagation();
-          openCancelModal(appt.id);
+          openCancelModal(appt.appointment_id);
         },
       }));
     }
@@ -1092,7 +1151,7 @@
   }
 
   function statusBadgeForAppt(status) {
-    var map = { upcoming: ["badge-accent", "Upcoming"], completed: ["badge-success", "Completed"], cancelled: ["badge-danger", "Cancelled"] };
+    var map = { scheduled: ["badge-accent", "Scheduled"], completed: ["badge-success", "Completed"], cancelled: ["badge-danger", "Cancelled"] };
     var pair = map[status] || ["badge-neutral", status];
     return el("span", { class: "badge " + pair[0], text: pair[1] });
   }
@@ -1111,16 +1170,17 @@
       var btn = $("#cancel-modal-confirm");
       btn.disabled = true;
       btn.textContent = "Cancelling…";
-      setTimeout(function () {
-        var appt = MockDB.appointments.filter(function (a) { return a.id === State.cancelTargetId; })[0];
-        if (appt) appt.status = "cancelled";
+      api.cancelAppointment({ appointment_id: State.cancelTargetId }).then(function (res) {
         btn.disabled = false;
         btn.textContent = "Cancel Appointment";
+        if (!res || !res.success) {
+          toast((res && res.message) || "Couldn't cancel this appointment.", "danger");
+          return;
+        }
         closeCancelModal();
         toast("Appointment cancelled", "success");
         renderAppointments();
-        updateNavBadges();
-      }, 450);
+      });
     });
   }
 
@@ -1143,49 +1203,65 @@
     var container = $("#history-list");
     container.setAttribute("aria-busy", "true");
     renderSkeleton(container, 3);
-    setTimeout(function () {
+    loadAppointmentHistory(function (appointments) {
       container.setAttribute("aria-busy", "false");
-      var past = MockDB.appointments.filter(function (a) { return a.status === "completed" || a.status === "cancelled"; });
+      var past = appointments.filter(function (a) { return a.status === "completed" || a.status === "cancelled"; });
       renderList(container, past, {
         empty: { icon: iconHistory(), title: "No visit history yet", body: "Completed and cancelled visits will appear here." },
         render: function (a) { return appointmentRow(a); },
       });
-    }, 280);
+    });
   }
 
   /* ---------------- Notifications ---------------- */
+
+  function loadNotifications(onSuccess) {
+    api.listNotifications().then(function (res) {
+      if (!res || !res.success) {
+        toast((res && res.message) || "Couldn't load notifications. Please try again.", "danger");
+        return;
+      }
+      State.notifications = res.data.notifications || [];
+      updateNavBadges();
+      if (onSuccess) onSuccess(State.notifications);
+    });
+  }
 
   function renderNotifications() {
     var container = $("#notifications-list");
     container.setAttribute("aria-busy", "true");
     renderSkeleton(container, 4);
-    setTimeout(function () {
+    loadNotifications(function (notifications) {
       container.setAttribute("aria-busy", "false");
-      renderList(container, MockDB.notifications, {
+      renderList(container, notifications, {
         empty: { icon: iconBell(), title: "No notifications", body: "You're all caught up." },
         render: function (n) { return notificationRow(n, { detailed: true }); },
       });
-    }, 260);
+    });
   }
 
   function notificationRow(n, opts) {
     opts = opts || {};
-    var row = el("div", { class: "notif-row" + (!n.read ? " is-unread" : "") }, [
+    var row = el("div", { class: "notif-row" + (!n.is_read ? " is-unread" : "") }, [
       el("span", { class: "notif-icon" }, [
         bellIcon(),
       ]),
       el("span", { class: "notif-body" }, [
         el("p", { text: n.title, style: "font-weight:700;" }),
-        opts.detailed ? el("p", { text: n.body }) : null,
-        el("span", { class: "notif-time", text: n.time }),
+        opts.detailed ? el("p", { text: n.message }) : null,
+        el("span", { class: "notif-time", text: n.created_at }),
       ]),
     ]);
-    if (!n.read) {
+    if (!n.is_read) {
       row.style.cursor = "pointer";
       row.addEventListener("click", function () {
-        n.read = true;
-        renderNotifications();
-        updateNavBadges();
+        api.markNotificationRead(n.notification_id).then(function (res) {
+          if (!res || !res.success) {
+            toast((res && res.message) || "Couldn't mark notification as read.", "danger");
+            return;
+          }
+          renderNotifications();
+        });
       });
     }
     return row;
@@ -1193,10 +1269,16 @@
 
   function setupNotifActions() {
     $("#notif-mark-all-btn").addEventListener("click", function () {
-      MockDB.notifications.forEach(function (n) { n.read = true; });
-      renderNotifications();
-      updateNavBadges();
-      toast("All notifications marked as read");
+      var unread = (State.notifications || []).filter(function (n) { return !n.is_read; });
+      Promise.all(unread.map(function (n) { return api.markNotificationRead(n.notification_id); })).then(function (responses) {
+        var failed = responses.filter(function (res) { return !res || !res.success; })[0];
+        if (failed) {
+          toast(failed.message || "Couldn't mark notifications as read.", "danger");
+          return;
+        }
+        renderNotifications();
+        toast("All notifications marked as read");
+      });
     });
   }
 

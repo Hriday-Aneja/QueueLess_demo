@@ -44,7 +44,7 @@ function apiPost(path, body) {
 const Api = {
   register: (data) => apiPost('/auth/register.php', data),
   login: (data) => apiPost('/auth/login.php', data),
-  logout: () => apiPost('/auth/logout.php', {}),
+  logout: () => apiRequest('POST', '/auth/logout.php'),
   me: () => apiGet('/auth/me.php'),
 
   // ---- Clinics / Doctors ----
@@ -140,6 +140,12 @@ window.QueueLess.ApiClient = class ApiClient {
   // ---- Queue ----
   queueStatus(tokenId) { return Api.queueStatus(tokenId); }
   onMyWay(tokenId) { return Api.onMyWay(tokenId); }
+  startConsultation(tokenId) { return Api.startConsultation(tokenId); }
+  saveConsultationNotes(tokenId, notes) { return Api.saveConsultationNotes(tokenId, notes); }
+  completeConsultation(tokenId, notes) { return Api.completeConsultation(tokenId, notes); }
+
+  // ---- Doctor ----
+  doctorDashboard() { return Api.doctorDashboard(); }
 
   // ---- Notifications ----
   listNotifications() { return Api.listNotifications(); }

@@ -51,6 +51,7 @@
         </div>
     </div>
 
+    <script src="../shared/js/api-client.js"></script>
     <script src="js/doctor-data.js"></script>
     <script src="js/doctor.js"></script>
     <script>
@@ -59,9 +60,7 @@
 
             var currentFilter = 'upcoming';
 
-            document.addEventListener('DOMContentLoaded', function () {
-                if (!window.MockAuth || !MockAuth.isLoggedIn()) return; // guard() already redirects
-
+            document.addEventListener('doctor-auth-ready', function () {
                 wireFilterTabs();
                 renderAppointments();
             });
@@ -97,7 +96,7 @@
             }
 
             function renderAppointments() {
-                var all = DoctorMockData.getAppointments();
+                var all = [];
                 var filtered = filterAppointments(all).sort(function (a, b) {
                     var da = a.appointment_date + ' ' + a.appointment_time;
                     var db = b.appointment_date + ' ' + b.appointment_time;

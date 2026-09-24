@@ -98,8 +98,7 @@
                                     <textarea class="form-textarea" id="notesFollowUp"
                                         placeholder="Next steps, follow-up date, advice\u2026"></textarea>
                                 </div>
-                                <p class="text-faint" style="font-size:12.5px;">Notes are kept for this demo session
-                                    only \u2014 there\u2019s no backend to save them to yet.</p>
+                                <p class="text-faint" style="font-size:12.5px;">Notes save automatically while you type.</p>
                                 <div class="form-actions">
                                     <button type="button" class="btn btn-secondary" id="markNoShowBtn">Mark
                                         No-show</button>
@@ -129,28 +128,30 @@
         </div>
     </div>
 
+    <script src="../shared/js/api-client.js"></script>
     <script src="js/doctor-data.js"></script>
     <script src="js/doctor.js"></script>
     <script>
         (function () {
             'use strict';
 
-            document.addEventListener('DOMContentLoaded', function () {
-                if (!window.MockAuth || !MockAuth.isLoggedIn()) return; // guard() already redirects
-
+            document.addEventListener('doctor-auth-ready', function () {
                 var tokenId = DoctorUI.getQueryParam('token_id');
-                var token = tokenId ? DoctorMockData.getTokenById(tokenId) : null;
+                window.DoctorApi.doctorDashboard().then(function (result) {
+                    var queue = result && result.success && result.data.queue || [];
+                    var token = queue.filter(function (item) { return String(item.token_id) === String(tokenId); })[0];
 
-                if (!token) {
-                    document.getElementById('consultationSubtitle').textContent = 'Patient not found';
-                    document.getElementById('notFoundState').classList.remove('hidden');
-                    return;
-                }
+                    if (!token) {
+                        document.getElementById('consultationSubtitle').textContent = 'Patient not found';
+                        document.getElementById('notFoundState').classList.remove('hidden');
+                        return;
+                    }
 
-                document.getElementById('consultationLayout').classList.remove('hidden');
-                renderPatient(token);
-                renderHistory(token.patient_id);
-                wireActions(token);
+                    document.getElementById('consultationLayout').classList.remove('hidden');
+                    renderPatient(token);
+                    renderHistory();
+                    wireActions(token);
+                });
             });
 
             function renderPatient(token) {
@@ -159,50 +160,64 @@
 
                 document.getElementById('patientAvatar').textContent = DoctorUI.initials(token.patient_name);
                 document.getElementById('patientName').textContent = token.patient_name;
-                document.getElementById('patientMetaLine').textContent = token.patient_age + ' yrs \u00b7 ' + token.patient_gender;
+                document.getElementById('patientMetaLine').textContent = (token.token_type === 'walkin' ? 'Walk-in' : 'Appointment') + ' \u00b7 Queue position ' + token.queue_position;
 
                 document.getElementById('patientToken').textContent = '#' + token.token_number;
-                document.getElementById('patientTime').textContent = DoctorUI.formatTime(token.appointment_time);
+                document.getElementById('patientTime').textContent = token.estimated_wait_minutes + ' min estimated wait';
                 document.getElementById('patientType').textContent = token.token_type === 'walkin' ? 'Walk-in' : 'Appointment';
                 document.getElementById('patientPriority').innerHTML = DoctorUI.priorityBadgeHtml(token.priority);
-                document.getElementById('patientReason').textContent = token.reason;
+                document.getElementById('patientReason').textContent = 'Token status: ' + DoctorUI.statusLabel(token.current_status);
             }
 
-            function renderHistory(patientId) {
-                var history = DoctorMockData.getPatientHistory(patientId);
+            function renderHistory() {
                 var list = document.getElementById('historyList');
                 var emptyState = document.getElementById('historyEmptyState');
-
-                if (!history.length) {
-                    list.innerHTML = '';
-                    emptyState.classList.remove('hidden');
-                    return;
-                }
-                emptyState.classList.add('hidden');
-
-                list.innerHTML = history
-                    .slice()
-                    .sort(function (a, b) { return a.date < b.date ? 1 : -1; })
-                    .map(function (entry) {
-                        return ''
-                            + '<div class="history-item">'
-                            + '<div class="history-date">' + DoctorUI.formatDate(entry.date) + '</div>'
-                            + '<div class="history-note">' + DoctorUI.escapeHtml(entry.note) + '</div>'
-                            + '</div>';
-                    }).join('');
+                list.innerHTML = '';
+                emptyState.classList.remove('hidden');
             }
 
             function wireActions(token) {
                 var form = document.getElementById('consultationForm');
-                form.addEventListener('submit', function (e) {
-                    e.preventDefault();
-                    DoctorMockData.setTokenStatus(token.token_id, 'completed');
-                    window.location.href = 'dashboard.html';
+                var saveTimer = null;
+                var fields = [document.getElementById('notesDiagnosis'), document.getElementById('notesPrescription'), document.getElementById('notesFollowUp')];
+
+                fields.forEach(function (field) {
+                    field.addEventListener('input', function () {
+                        if (saveTimer) window.clearTimeout(saveTimer);
+                        saveTimer = window.setTimeout(function () { saveNotes(token.token_id); }, 700);
+                    });
                 });
 
-                document.getElementById('markNoShowBtn').addEventListener('click', function () {
-                    DoctorMockData.setTokenStatus(token.token_id, 'no_show');
-                    window.location.href = 'dashboard.html';
+                form.addEventListener('submit', function (e) {
+                    e.preventDefault();
+                    var notes = consultationNotes();
+                    window.DoctorApi.completeConsultation(token.token_id, notes).then(function (result) {
+                        if (!result || !result.success) {
+                            window.alert(result && result.message || 'Unable to complete consultation.');
+                            window.location.href = 'dashboard.html';
+                            return;
+                        }
+                        window.location.href = 'dashboard.html';
+                    });
+                });
+
+                document.getElementById('markNoShowBtn').hidden = true;
+            }
+
+            function consultationNotes() {
+                return [
+                    'Diagnosis: ' + document.getElementById('notesDiagnosis').value,
+                    'Prescription: ' + document.getElementById('notesPrescription').value,
+                    'Follow-up Notes: ' + document.getElementById('notesFollowUp').value
+                ].join('\n');
+            }
+
+            function saveNotes(tokenId) {
+                window.DoctorApi.saveConsultationNotes(tokenId, consultationNotes()).then(function (result) {
+                    if (result && !result.success) {
+                        window.alert(result.message || 'Unable to save notes.');
+                        window.location.href = 'dashboard.html';
+                    }
                 });
             }
         })();

@@ -7,10 +7,10 @@
      - DoctorUI   : small formatting/render helpers shared across pages
      - App shell  : header + side nav, rendered into #appShellHeader /
                     #appShellNav on every protected page
-     - Login      : index.html form handling (via MockAuth)
-     - Guard      : redirects to index.html if there is no mock session
+    - Login      : index.html form handling through the shared API client
+    - Guard      : validates the server session before rendering protected pages
 
-   Depends on doctor-data.js (DoctorMockData, MockAuth) — load that first.
+    Depends on doctor-data.js (DoctorSession) — load that first.
    ========================================================================== */
 
 (function (global) {
@@ -30,24 +30,34 @@
     // the dashboard queue and isn't in the side nav, but is still protected.
     var PROTECTED_PAGES = ['dashboard', 'consultation', 'appointments', 'profile'];
 
+    var api = new window.QueueLess.ApiClient();
+
     var STATUS_LABELS = {
         waiting: 'Waiting',
-        in_progress: 'In Progress',
+        next: 'Up Next',
+        arriving: 'Arriving',
+        checked_in: 'Checked In',
+        consulting: 'In Consultation',
         completed: 'Completed',
         no_show: 'No Show',
+        late: 'Late',
+        requeue: 'Requeued',
         cancelled: 'Cancelled',
-        scheduled: 'Scheduled',
-        checked_in: 'Checked In'
+        scheduled: 'Scheduled'
     };
 
     var STATUS_BADGE_CLASS = {
         waiting: 'badge-waiting',
-        in_progress: 'badge-in-progress',
+        next: 'badge-in-progress',
+        arriving: 'badge-in-progress',
+        checked_in: 'badge-in-progress',
+        consulting: 'badge-completed',
         completed: 'badge-completed',
         no_show: 'badge-no-show',
+        late: 'badge-urgent',
+        requeue: 'badge-normal',
         cancelled: 'badge-cancelled',
-        scheduled: 'badge-scheduled',
-        checked_in: 'badge-in-progress'
+        scheduled: 'badge-scheduled'
     };
 
     var WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -142,7 +152,7 @@
         var navEl = document.getElementById('appShellNav');
         if (!headerEl && !navEl) return;
 
-        var doctor = global.DoctorMockData.getProfile();
+        var doctor = global.DoctorSession.get() || {};
 
         if (headerEl) {
             headerEl.innerHTML = headerHtml(doctor);
@@ -155,6 +165,8 @@
     }
 
     function headerHtml(doctor) {
+        var name = doctor.full_name || doctor.name || 'Doctor';
+        var specialization = doctor.specialization || 'Doctor';
         return ''
             + '<div class="app-header-left">'
             + '<button type="button" class="menu-toggle-btn" id="menuToggleBtn" aria-label="Toggle navigation">&#9776;</button>'
@@ -165,10 +177,10 @@
             + '</div>'
             + '<div class="app-header-right">'
             + '<div class="header-doctor-chip">'
-            + '<span class="avatar-circle">' + DoctorUI.escapeHtml(doctor.avatar_initials || DoctorUI.initials(doctor.full_name)) + '</span>'
+            + '<span class="avatar-circle">' + DoctorUI.escapeHtml(doctor.avatar_initials || DoctorUI.initials(name)) + '</span>'
             + '<span class="doctor-name-wrap">'
-            + '<span class="doctor-name">' + DoctorUI.escapeHtml(doctor.full_name) + '</span>'
-            + '<span class="doctor-role">' + DoctorUI.escapeHtml(doctor.specialization) + '</span>'
+            + '<span class="doctor-name">' + DoctorUI.escapeHtml(name) + '</span>'
+            + '<span class="doctor-role">' + DoctorUI.escapeHtml(specialization) + '</span>'
             + '</span>'
             + '</div>'
             + '</div>';
@@ -204,8 +216,10 @@
         var logoutBtn = document.getElementById('navLogoutBtn');
         if (logoutBtn) {
             logoutBtn.addEventListener('click', function () {
-                global.MockAuth.logout();
-                window.location.href = 'index.html';
+                api.logout().finally(function () {
+                    global.DoctorSession.clear();
+                    window.location.href = 'index.html';
+                });
             });
         }
     }
@@ -217,12 +231,6 @@
     function wireLoginForm() {
         var form = document.getElementById('doctorLoginForm');
         if (!form) return;
-
-        // Already signed in — no reason to show the login form again.
-        if (global.MockAuth.isLoggedIn()) {
-            window.location.href = 'dashboard.html';
-            return;
-        }
 
         var emailInput = document.getElementById('doctorEmail');
         var passwordInput = document.getElementById('doctorPassword');
@@ -258,20 +266,25 @@
             submitBtn.disabled = true;
             submitBtn.textContent = 'Signing in\u2026';
 
-            // Mock auth is synchronous, but a tiny delay keeps the UI honest.
-            window.setTimeout(function () {
-                var result = global.MockAuth.login(email, password);
-
-                if (!result.success) {
-                    DoctorUI.showAlert(alertEl, result.message || 'Unable to sign in.', false);
+            api.login({ email: email, password: password }).then(function (result) {
+                if (!result || !result.success) {
+                    DoctorUI.showAlert(alertEl, result && result.message || 'Unable to sign in.', false);
                     submitBtn.disabled = false;
                     submitBtn.textContent = 'Sign In';
                     return;
                 }
 
+                if (!result.data || result.data.role !== 'doctor') {
+                    DoctorUI.showAlert(alertEl, 'This login is for doctors. Staff accounts use a different portal.', false);
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Sign In';
+                    return;
+                }
+
+                global.DoctorSession.set(result.data);
                 DoctorUI.showAlert(alertEl, 'Signed in \u2014 redirecting\u2026', true);
                 window.location.href = 'dashboard.html';
-            }, 300);
+            });
         });
     }
 
@@ -283,14 +296,29 @@
         var page = document.body.getAttribute('data-page');
 
         if (PROTECTED_PAGES.indexOf(page) !== -1) {
-            global.MockAuth.guard(); // redirects to index.html if not logged in
-            if (!global.MockAuth.isLoggedIn()) return;
-            renderAppShell(page);
+            global.DoctorAuthReady = api.me().then(function (result) {
+                if (!result || !result.success || !result.data || result.data.role !== 'doctor') {
+                    global.DoctorSession.clear();
+                    window.location.href = 'index.html';
+                    return false;
+                }
+
+                global.DoctorSession.set(result.data);
+                renderAppShell(page);
+                document.dispatchEvent(new CustomEvent('doctor-auth-ready'));
+                return true;
+            }).catch(function () {
+                global.DoctorSession.clear();
+                window.location.href = 'index.html';
+                return false;
+            });
         }
 
         wireLoginForm();
     });
 
     global.DoctorUI = DoctorUI;
+    global.DoctorApi = api;
+    global.renderDoctorShell = renderAppShell;
 
 })(window);

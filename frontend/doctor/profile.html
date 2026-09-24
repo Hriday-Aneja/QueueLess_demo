@@ -92,36 +92,34 @@
         </div>
     </div>
 
+    <script src="../shared/js/api-client.js"></script>
     <script src="js/doctor-data.js"></script>
     <script src="js/doctor.js"></script>
     <script>
         (function () {
             'use strict';
 
-            document.addEventListener('DOMContentLoaded', function () {
-                if (!window.MockAuth || !MockAuth.isLoggedIn()) return; // guard() already redirects
-
-                fillForm(DoctorMockData.getProfile());
+            document.addEventListener('doctor-auth-ready', function () {
+                var profile = window.DoctorSession.get() || {};
+                fillForm(profile);
 
                 document.getElementById('profileForm').addEventListener('submit', function (e) {
                     e.preventDefault();
-                    // Mock only — no backend to persist to. Confirms the save
-                    // in-page so the flow feels complete for this demo build.
-                    DoctorUI.showAlert('profileAlert', 'Profile changes saved for this session.', true);
+                    DoctorUI.showAlert('profileAlert', 'Profile updates are not available from this portal.', false);
                 });
 
                 document.getElementById('resetProfileBtn').addEventListener('click', function () {
                     DoctorUI.hideAlert('profileAlert');
-                    fillForm(DoctorMockData.getProfile());
+                    fillForm(window.DoctorSession.get() || {});
                 });
             });
 
             function fillForm(profile) {
                 document.getElementById('profileAvatar').textContent = profile.avatar_initials || DoctorUI.initials(profile.full_name);
-                document.getElementById('profileName').textContent = profile.full_name;
-                document.getElementById('profileMeta').textContent = profile.doctor_code + ' \u00b7 ' + profile.specialization;
+                document.getElementById('profileName').textContent = profile.full_name || profile.name || '';
+                document.getElementById('profileMeta').textContent = profile.doctor_code || ('Doctor ID ' + (profile.doctor_id || ''));
 
-                document.getElementById('profileFullName').value = profile.full_name || '';
+                document.getElementById('profileFullName').value = profile.full_name || profile.name || '';
                 document.getElementById('profileEmail').value = profile.email || '';
                 document.getElementById('profilePhone').value = profile.phone || '';
                 document.getElementById('profileSpecialization').value = profile.specialization || '';
