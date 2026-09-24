@@ -100,3 +100,48 @@ const Api = {
   },
   adminSaveDoctor: (data) => apiPost('/admin/doctors.php', data),
 };
+
+// ---- window.QueueLess.ApiClient -----------------------------------------
+// patient.js does `new window.QueueLess.ApiClient({ baseUrl, mockMode })`.
+// Every method here just delegates to the corresponding `Api.*` function
+// above, so there's one source of truth for endpoint paths -- this class
+// is purely an instance-call convenience wrapper around it. `mockMode` is
+// stored but not branched on: patient.js now always talks to the real
+// backend/api endpoints (MOCK_MODE = false there), so there's no mock
+// fallback path here to switch on.
+window.QueueLess = window.QueueLess || {};
+
+window.QueueLess.ApiClient = class ApiClient {
+  constructor({ baseUrl = API_BASE, mockMode = false } = {}) {
+    this.baseUrl = baseUrl;
+    this.mockMode = mockMode;
+  }
+
+  // ---- Auth ----
+  register(data) { return Api.register(data); }
+  login(data) { return Api.login(data); }
+  logout() { return Api.logout(); }
+  me() { return Api.me(); }
+
+  // ---- Clinics / Doctors ----
+  listClinics() { return Api.listClinics(); }
+  listDoctors(clinicId) { return Api.listDoctors(clinicId); }
+  doctorSchedule(doctorId, date) { return Api.doctorSchedule(doctorId, date); }
+
+  // ---- Appointments ----
+  bookAppointment(data) { return Api.bookAppointment(data); }
+  cancelAppointment(data) { return Api.cancelAppointment(data); }
+  appointmentHistory() { return Api.appointmentHistory(); }
+
+  // ---- Tokens ----
+  createWalkin(data) { return Api.createWalkin(data); }
+  getToken(tokenId) { return Api.getToken(tokenId); }
+
+  // ---- Queue ----
+  queueStatus(tokenId) { return Api.queueStatus(tokenId); }
+  onMyWay(tokenId) { return Api.onMyWay(tokenId); }
+
+  // ---- Notifications ----
+  listNotifications() { return Api.listNotifications(); }
+  markNotificationRead(id) { return Api.markNotificationRead(id); }
+};

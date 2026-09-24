@@ -25,6 +25,17 @@ function get_db_connection(): PDO
 
     try {
         $pdo = new PDO($dsn, DB_USER, DB_PASS, $options);
+        // PHP's date_default_timezone_set() (config.php) has no effect on
+        // MySQL's own NOW()/CURRENT_TIMESTAMP, which run on the DB
+        // server's SYSTEM timezone. NoShowHandler/LateArrivalHandler
+        // compute grace-period deadlines by strtotime()-parsing a
+        // queue_status.updated_at string written by MySQL and comparing
+        // it against PHP's time() -- if the two disagree, that math is
+        // silently wrong (tokens can be marked NO_SHOW within seconds of
+        // being created). Pinning the session to the same fixed offset
+        // PHP uses keeps both sides reading and writing the same clock,
+        // regardless of the DB server's own OS timezone.
+        $pdo->exec("SET time_zone = '+05:30'");
     } catch (PDOException $e) {
         // Never leak raw DB errors to the client. Log details, throw a
         // generic exception that ErrorHandler.php will turn into a

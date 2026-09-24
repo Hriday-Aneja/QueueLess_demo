@@ -19,9 +19,10 @@ class Doctor
     {
         $stmt = get_db_connection()->prepare(
             'SELECT d.doctor_id, d.doctor_code, d.specialization, d.consultation_fee,
-                    d.department_id, dep.department_name
+                    d.department_id, dep.department_name, u.full_name AS doctor_name
              FROM doctors d
              JOIN departments dep ON dep.department_id = d.department_id
+             LEFT JOIN users u ON u.user_id = d.user_id
              WHERE dep.clinic_id = :clinic_id AND d.is_active = TRUE
              ORDER BY dep.department_name, d.doctor_code'
         );

@@ -63,11 +63,15 @@ class Appointment
     public static function listForPatient(int $patientId): array
     {
         $stmt = get_db_connection()->prepare(
-            'SELECT a.appointment_id, a.appointment_date, a.appointment_time, a.status,
-                    d.doctor_code, dep.department_name
+            'SELECT a.appointment_id, a.doctor_id, a.appointment_date, a.appointment_time,
+                    a.status, a.reason,
+                    d.doctor_code, u.full_name AS doctor_name,
+                    dep.department_name, c.clinic_id, c.clinic_name
              FROM appointments a
              JOIN doctors d ON d.doctor_id = a.doctor_id
+             LEFT JOIN users u ON u.user_id = d.user_id
              JOIN departments dep ON dep.department_id = a.department_id
+             JOIN clinics c ON c.clinic_id = dep.clinic_id
              WHERE a.patient_id = :patient_id
              ORDER BY a.appointment_date DESC, a.appointment_time DESC'
         );
