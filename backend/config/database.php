@@ -23,6 +23,16 @@ function get_db_connection(): PDO
         PDO::ATTR_EMULATE_PREPARES   => false,
     ];
 
+    if (!extension_loaded('pdo_mysql')) {
+        error_log('[DB CONNECT FAILED] pdo_mysql extension is not enabled in the PHP runtime serving Apache.');
+        throw new RuntimeException('Database connection failed.');
+    }
+
+    if (DB_PASS === 'YOUR_ACTUAL_MYSQL_PASSWORD') {
+        error_log('[DB CONNECT FAILED] DB_PASS still contains the config.local.php placeholder.');
+        throw new RuntimeException('Database connection failed.');
+    }
+
     try {
         $pdo = new PDO($dsn, DB_USER, DB_PASS, $options);
         // PHP's date_default_timezone_set() (config.php) has no effect on
@@ -37,10 +47,17 @@ function get_db_connection(): PDO
         // regardless of the DB server's own OS timezone.
         $pdo->exec("SET time_zone = '+05:30'");
     } catch (PDOException $e) {
-        // Never leak raw DB errors to the client. Log details, throw a
-        // generic exception that ErrorHandler.php will turn into a
-        // clean JSON error response.
-        error_log('[DB CONNECT FAILED] ' . $e->getMessage());
+        // Log connection metadata and the server's reason, but never the
+        // password or the full DSN. ErrorHandler returns a generic response.
+        error_log(sprintf(
+            '[DB CONNECT FAILED] host=%s port=%s database=%s user=%s code=%s message=%s',
+            DB_HOST,
+            $port,
+            DB_NAME,
+            DB_USER,
+            (string) $e->getCode(),
+            $e->getMessage()
+        ));
         throw new RuntimeException('Database connection failed.');
     }
 

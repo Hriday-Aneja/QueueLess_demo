@@ -42,9 +42,17 @@ class ErrorHandler
         $entry = '[' . date('Y-m-d H:i:s') . '] ' . $line . PHP_EOL;
 
         if (defined('LOG_FILE')) {
-            @file_put_contents(LOG_FILE, $entry, FILE_APPEND);
-        } else {
-            error_log($entry);
+            $logDirectory = dirname(LOG_FILE);
+            $canWriteFile = is_dir($logDirectory)
+                && (!file_exists(LOG_FILE) || is_writable(LOG_FILE));
+
+            if ($canWriteFile && file_put_contents(LOG_FILE, $entry, FILE_APPEND) !== false) {
+                return;
+            }
         }
+
+        // Keep diagnostics available when the optional backend/logs folder
+        // has not been created yet or is not writable under Apache.
+        error_log($entry);
     }
 }

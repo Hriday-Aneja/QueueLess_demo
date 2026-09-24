@@ -32,8 +32,9 @@ define('ROLE_ADMIN', 'admin');
 define('ROLE_DOCTOR', 'doctor');
 
 // ---- Environment ----------------------------------------------------------
-// Set to false in production so PHP errors are never shown to the browser.
-define('APP_DEBUG', true);
+// Keep exception details out of API responses. Detailed failures are logged
+// privately by ErrorHandler and the database connection layer.
+define('APP_DEBUG', false);
 
 // ---- Paths ------------------------------------------------------------
 define('BACKEND_ROOT', dirname(__DIR__));

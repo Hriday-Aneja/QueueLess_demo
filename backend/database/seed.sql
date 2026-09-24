@@ -47,11 +47,13 @@ SET FOREIGN_KEY_CHECKS = 1;
 -- ---------------------------------------------------------
 -- 1. CLINIC
 -- ---------------------------------------------------------
-INSERT INTO clinics (clinic_name, address, phone, is_active)
+INSERT INTO clinics (clinic_name, address, phone, latitude, longitude, is_active)
 VALUES (
     'City Care Multispecialty Hospital',
     '221 Ring Road, Lajpat Nagar, New Delhi, Delhi 110024',
     '01141234567',
+    28.56770,
+    77.24330,
     TRUE
 );
 

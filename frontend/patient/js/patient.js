@@ -298,10 +298,10 @@
       alertBox.textContent = message;
       alertBox.style.display = "block";
     }
-
     function setSubmitting(btn, submitting, label) {
       btn.disabled = submitting;
-      btn.querySelector(".btn-label") && (btn.querySelector(".btn-label").textContent = submitting ? "Please wait…" : label);
+      var labelEl = btn.querySelector(".btn-label");
+      if (labelEl) labelEl.textContent = submitting ? "Please wait…" : label;
     }
 
     $("#login-form").addEventListener("submit", function (evt) {
@@ -317,26 +317,17 @@
 
       var btn = $("#login-submit");
       setSubmitting(btn, true, "Sign In");
-
       api.login({ email: email, password: password }).then(function (res) {
         setSubmitting(btn, false, "Sign In");
-
         if (!res || !res.success) {
           showAlert((res && res.message) || "Something went wrong. Please try again.");
           return;
         }
-
         if (res.data.role !== "patient") {
           showAlert("This login is for patients. Staff accounts use a different portal.");
           return;
         }
-
-        Session.set({
-          user_id: res.data.user_id,
-          patient_id: res.data.patient_id,
-          name: res.data.name,
-          email: email,
-        });
+        Session.set({ user_id: res.data.user_id, patient_id: res.data.patient_id, name: res.data.name, email: email });
         window.location.href = "dashboard.html";
       });
     });
@@ -644,44 +635,71 @@
     var container = $("#clinics-list");
     var chipsWrap = $("#clinic-filter-chips");
     var searchInput = $("#clinic-search");
+    var locationButton = $("#use-location-btn");
+    var searchTimer = null;
 
     if (chipsWrap) chipsWrap.innerHTML = ""; // no per-clinic department data from /clinics/list.php to build chips from
 
-    var allClinics = [];
-
-    function paintList() {
-      var q = searchInput.value.trim().toLowerCase();
-      var filtered = allClinics.filter(function (c) {
-        return !q || c.clinic_name.toLowerCase().indexOf(q) > -1 || (c.address || "").toLowerCase().indexOf(q) > -1;
-      });
-      container.setAttribute("aria-busy", "false");
-      renderList(container, filtered, {
-        empty: { icon: iconSearch(), title: "No clinics found", body: "Try a different search." },
-        render: function (c) { return clinicRow(c); },
+    function loadClinics(params) {
+      container.setAttribute("aria-busy", "true");
+      renderSkeleton(container, 4);
+      api.nearbyClinics(params || {}).then(function (res) {
+        container.setAttribute("aria-busy", "false");
+        if (!res || !res.success) {
+          toast((res && res.message) || "Couldn't load clinics. Please try again.", "danger");
+          renderList(container, [], { empty: { icon: iconSearch(), title: "Couldn't load clinics", body: "Please try again." } });
+          return;
+        }
+        renderList(container, res.data.clinics || [], {
+          empty: { icon: iconSearch(), title: "No clinics found", body: params && params.search ? "Try a different locality or clinic name." : "No clinics are available right now." },
+          render: function (clinic) { return clinicRow(clinic); },
+        });
       });
     }
 
-    searchInput.oninput = paintList;
-    container.setAttribute("aria-busy", "true");
-    renderSkeleton(container, 4);
+    searchInput.oninput = function () {
+      if (searchTimer) clearTimeout(searchTimer);
+      searchTimer = setTimeout(function () { loadClinics({ search: searchInput.value.trim() }); }, 250);
+    };
 
-    api.listClinics().then(function (res) {
-      if (!res || !res.success) {
-        container.setAttribute("aria-busy", "false");
-        renderList(container, [], { empty: { icon: iconSearch(), title: "Couldn't load clinics", body: (res && res.message) || "Please try again." } });
+    locationButton.onclick = function () {
+      if (!navigator.geolocation) {
+        toast("Location is not supported by this browser. Search by locality instead.", "danger");
         return;
       }
-      allClinics = res.data.clinics || [];
-      paintList();
-    });
+      locationButton.disabled = true;
+      locationButton.textContent = "Finding clinics…";
+      navigator.geolocation.getCurrentPosition(function (position) {
+        loadClinics({ latitude: position.coords.latitude, longitude: position.coords.longitude });
+        locationButton.disabled = false;
+        locationButton.textContent = "Use My Location";
+      }, function (error) {
+        locationButton.disabled = false;
+        locationButton.textContent = "Use My Location";
+        var message = "Couldn't get your location. Search by locality instead.";
+        if (error.code === error.PERMISSION_DENIED) message = "Location permission was denied. Search by locality instead.";
+        if (error.code === error.TIMEOUT) message = "Location request timed out. Please try again or search by locality.";
+        toast(message, "danger");
+      }, { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 });
+    };
+
+    loadClinics({});
   }
 
   function clinicRow(clinic) {
+    var distance = clinic.distance_km === null || clinic.distance_km === undefined
+      ? "Distance unavailable"
+      : formatClinicDistance(clinic.distance_km);
+    var departments = clinic.departments || "Departments unavailable";
+    var queueStatus = clinic.current_queue_status ? clinic.current_queue_status.replace(/_/g, " ") : "idle";
+    var queue = "Queue: " + Number(clinic.waiting_count || 0) + " patients · ETA: " + Number(clinic.estimated_wait_minutes || 0) + " min · " + queueStatus;
     var btn = el("button", { class: "row-card", type: "button" }, [
       el("span", { class: "row-media", text: initials(clinic.clinic_name) }),
       el("span", { class: "row-body" }, [
         el("span", { class: "row-title", text: clinic.clinic_name }),
         el("span", { class: "row-sub", text: clinic.address || "" }),
+        el("span", { class: "row-sub", text: distance + " · " + departments }),
+        el("span", { class: "row-sub", text: queue + " · " + Number(clinic.doctor_count || 0) + " doctors" }),
       ]),
       chevronIcon(),
     ]);
@@ -691,6 +709,13 @@
       navigateTo("doctors");
     });
     return btn;
+  }
+
+  function formatClinicDistance(distanceKm) {
+    var distance = Number(distanceKm);
+    if (!isFinite(distance)) return "Distance unavailable";
+    if (distance < 1) return Math.round(distance * 1000) + " m away";
+    return distance.toFixed(1) + " km away";
   }
 
   /* ---------------- Doctors ---------------- */

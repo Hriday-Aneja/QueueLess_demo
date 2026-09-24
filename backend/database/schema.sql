@@ -46,6 +46,8 @@ CREATE TABLE clinics (
     clinic_name VARCHAR(150) NOT NULL,
     address VARCHAR(255),
     phone VARCHAR(20),
+    latitude DECIMAL(10,8) NULL,
+    longitude DECIMAL(11,8) NULL,
 
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
 

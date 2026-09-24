@@ -96,6 +96,7 @@
    -------------------------------------------------------------------- */
 
 body.patient-app {
+  margin: 0;
   background:
     radial-gradient(circle at 18% 18%, rgba(139, 92, 246, 0.06), transparent 38%),
     radial-gradient(circle at 82% 64%, rgba(236, 72, 153, 0.045), transparent 38%),
@@ -509,6 +510,7 @@ p { color: var(--body-text); }
   position: sticky;
   top: 0;
   height: 100vh;
+  box-sizing: border-box;
   background: var(--surface-off);
   box-shadow: var(--shadow-card);
   padding: 26px 18px 20px;
@@ -599,11 +601,12 @@ p { color: var(--body-text); }
 .app-content {
   position: relative;
   width: 100%;
+  box-sizing: border-box;
   max-width: 1040px;
   margin: 0 auto;
   padding: 26px 20px 130px;
 }
-@media (min-width: 900px) { .app-content { padding: 36px 40px 56px; margin: 0; max-width: none; } }
+@media (min-width: 900px) { .app-content { padding: 24px 32px 40px; margin: 0; max-width: none; } }
 
 /* Mobile drawer — soft off-white panel, not dark chrome */
 .mobile-drawer-backdrop {
@@ -763,6 +766,49 @@ p { color: var(--body-text); }
   font-family: var(--font-heading); font-size: 12.5px; font-weight: 700; color: var(--body-text);
 }
 .chip[aria-pressed="true"] { background: var(--purple-btn-grad); color: #fff; box-shadow: var(--shadow-btn-primary); }
+
+/* Clinics: keep discovery dense on laptop screens while preserving the
+   existing card content and click target. */
+#view-clinics .view-header { margin-bottom: 14px; }
+#view-clinics .view-header h2 { font-size: clamp(1.45rem, 2.5vw, 1.9rem); }
+#view-clinics .filter-bar { margin-bottom: 10px; overflow: visible; }
+#view-clinics .search-input input { height: 46px; }
+#view-clinics .chip-scroll { min-height: 0; }
+#view-clinics .list-stack {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 10px !important;
+}
+#view-clinics .row-card {
+  position: relative;
+  align-items: flex-start;
+  gap: 9px;
+  min-width: 0;
+  min-height: 142px;
+  padding: 14px 38px 14px 14px;
+  border-radius: 20px;
+}
+#view-clinics .row-media { width: 40px; height: 40px; border-radius: 13px; font-size: 13px; }
+#view-clinics .row-title { margin-bottom: 4px; }
+#view-clinics .row-sub {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  line-height: 1.35;
+}
+#view-clinics .row-chevron { position: absolute; top: 18px; right: 14px; }
+
+@media (max-width: 899px) {
+  #view-clinics .list-stack { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 600px) {
+  #view-clinics .filter-bar { flex-wrap: wrap; }
+  #view-clinics .search-input { flex-basis: 100%; }
+  #view-clinics .filter-bar .btn { width: 100%; }
+  #view-clinics .list-stack { grid-template-columns: 1fr; }
+}
 
 /* Booking: date/time selection */
 .date-scroll { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 8px; margin-bottom: 20px; }

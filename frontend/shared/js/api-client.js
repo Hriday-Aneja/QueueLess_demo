@@ -54,8 +54,21 @@ const Api = {
 
   // ---- Clinics / Doctors ----
   listClinics: () => apiGet('/clinics/list.php'),
+  nearbyClinics: (params = {}) => {
+    const query = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== null && value !== undefined && value !== '') query.set(key, value);
+    });
+    const qs = query.toString();
+    return apiGet('/clinics/nearby.php' + (qs ? `?${qs}` : ''));
+  },
   listDoctors: (clinicId) => apiGet(`/doctors/list.php?clinic_id=${clinicId}`),
   doctorSchedule: (doctorId, date) => apiGet(`/doctors/schedules.php?doctor_id=${doctorId}&date=${date}`),
+  receptionSearchPatients: (query, patientId = null) => {
+    const params = new URLSearchParams({ q: query });
+    if (patientId !== null && patientId !== undefined) params.set('patient_id', patientId);
+    return apiGet(`/patients/reception-search.php?${params.toString()}`);
+  },
 
   // ---- Appointments ----
   bookAppointment: (data) => apiPost('/appointments/book.php', data),
@@ -73,8 +86,13 @@ const Api = {
   markNoShow: (tokenId) => apiPost('/queue/no-show.php', { token_id: tokenId }),
   markLate: (tokenId) => apiPost('/queue/late-arrival.php', { token_id: tokenId }),
   requeue: (tokenId) => apiPost('/queue/requeue.php', { token_id: tokenId }),
-  completeConsultation: (tokenId) => apiPost('/queue/complete.php', { token_id: tokenId }),
+  startConsultation: (tokenId) => apiPost('/queue/start-consultation.php', { token_id: tokenId }),
+  saveConsultationNotes: (tokenId, notes) => apiPost('/queue/notes.php', { token_id: tokenId, notes }),
+  completeConsultation: (tokenId, notes) => apiPost('/queue/complete.php', { token_id: tokenId, notes }),
   receptionView: (doctorId, date) => apiGet(`/queue/reception-view.php?doctor_id=${doctorId}&date=${date}`),
+
+  // ---- Doctor ----
+  doctorDashboard: () => apiGet('/doctors/dashboard.php'),
 
   // ---- Notifications ----
   listNotifications: () => apiGet('/notifications/list.php'),
@@ -103,4 +121,68 @@ const Api = {
   // ---- Admin: Departments (Phase 3.1) ----
   adminListDepartments: (clinicId) => apiGet('/admin/departments.php?clinic_id=' + encodeURIComponent(clinicId)),
   adminSaveDepartment: (data) => apiPost('/admin/departments.php', data),
+};
+
+// ---- window.QueueLess.ApiClient -----------------------------------------
+// patient.js does `new window.QueueLess.ApiClient({ baseUrl, mockMode })`.
+// Every method here just delegates to the corresponding `Api.*` function
+// above, so there's one source of truth for endpoint paths -- this class
+// is purely an instance-call convenience wrapper around it. `mockMode` is
+// stored but not branched on: patient.js now always talks to the real
+// backend/api endpoints (MOCK_MODE = false there), so there's no mock
+// fallback path here to switch on.
+window.QueueLess = window.QueueLess || {};
+
+window.QueueLess.ApiClient = class ApiClient {
+  constructor({ baseUrl = API_BASE, mockMode = false } = {}) {
+    this.baseUrl = baseUrl;
+    this.mockMode = mockMode;
+  }
+
+  // ---- Auth ----
+  register(data) { return Api.register(data); }
+  login(data) { return Api.login(data); }
+  logout() { return Api.logout(); }
+  me() { return Api.me(); }
+
+  // ---- Clinics / Doctors ----
+  listClinics() { return Api.listClinics(); }
+  nearbyClinics(params) { return Api.nearbyClinics(params); }
+  listDoctors(clinicId) { return Api.listDoctors(clinicId); }
+  doctorSchedule(doctorId, date) { return Api.doctorSchedule(doctorId, date); }
+  receptionSearchPatients(query, patientId) { return Api.receptionSearchPatients(query, patientId); }
+
+  // ---- Appointments ----
+  bookAppointment(data) { return Api.bookAppointment(data); }
+  cancelAppointment(data) { return Api.cancelAppointment(data); }
+  appointmentHistory() { return Api.appointmentHistory(); }
+
+  // ---- Tokens ----
+  createWalkin(data) { return Api.createWalkin(data); }
+  getToken(tokenId) { return Api.getToken(tokenId); }
+
+  // ---- Queue ----
+  queueStatus(tokenId) { return Api.queueStatus(tokenId); }
+  onMyWay(tokenId) { return Api.onMyWay(tokenId); }
+  startConsultation(tokenId) { return Api.startConsultation(tokenId); }
+  saveConsultationNotes(tokenId, notes) { return Api.saveConsultationNotes(tokenId, notes); }
+  completeConsultation(tokenId, notes) { return Api.completeConsultation(tokenId, notes); }
+
+  // ---- Doctor ----
+  doctorDashboard() { return Api.doctorDashboard(); }
+
+  // ---- Notifications ----
+  listNotifications() { return Api.listNotifications(); }
+  markNotificationRead(id) { return Api.markNotificationRead(id); }
+
+  // ---- Admin ----
+  adminData() { return Api.adminData(); }
+  getQueueRules() { return Api.getQueueRules(); }
+  setQueueRules(data) { return Api.setQueueRules(data); }
+  adminListClinics() { return Api.adminListClinics(); }
+  adminSaveClinic(data) { return Api.adminSaveClinic(data); }
+  adminListDoctors(filters) { return Api.adminListDoctors(filters); }
+  adminSaveDoctor(data) { return Api.adminSaveDoctor(data); }
+  adminListDepartments(clinicId) { return Api.adminListDepartments(clinicId); }
+  adminSaveDepartment(data) { return Api.adminSaveDepartment(data); }
 };
