@@ -1,21 +1,19 @@
 /* ==========================================================
    QueueLess — Reception: Live Queue
 
-   Mock-data build. Clinic -> department -> doctor pickers, the
+  Clinic -> department -> doctor pickers, the
    "Now Consulting / Up Next" hero and the full queue table all
-   read from ReceptionMockData (reception-data.js). No fetch(),
-   no backend calls.
+  read from the PHP API.
 
    Row actions (check in / no-show / late / requeue / cancel) reuse
    ReceptionUI.handleRowAction, so they behave exactly like the
    Patients page. "Call Next" and "Complete Consultation" go through
-   ReceptionMockData.callNext / completeConsultation.
+  the existing start-consultation and complete endpoints.
    ========================================================== */
 
 (function () {
   'use strict';
 
-  const D = ReceptionMockData;
   const UI = ReceptionUI;
   const { escapeHtml, todayIso, formatFriendlyDate, doctorLabel, statusBadge, priorityBadge } = UI;
 
@@ -29,10 +27,7 @@
 
   let els = {};
 
-  document.addEventListener('DOMContentLoaded', () => {
-    // reception.js has already guarded the page (redirects to index.html
-    // without a session) and wired logout / nav / user name.
-    if (!MockAuth.isLoggedIn()) return;
+  document.addEventListener('reception:ready', () => {
     initPage();
   });
 
@@ -64,7 +59,7 @@
     els.queueBody.addEventListener('click', (e) => {
       const btn = e.target.closest('button[data-action]');
       if (!btn || btn.disabled) return;
-      handleAction(btn.dataset.action, Number(btn.dataset.tokenId));
+      handleAction(btn.dataset.action, Number(btn.dataset.tokenId), btn);
     });
 
     state.refreshTimer = setInterval(() => {
@@ -76,8 +71,10 @@
     bootstrapClinics();
   }
 
-  function bootstrapClinics() {
-    const clinics = D.getClinics();
+  async function bootstrapClinics() {
+    const result = await Api.listClinics();
+    if (!result.success) { showError(result.message || 'Could not load clinics.'); return; }
+    const clinics = result.data.clinics || [];
     if (clinics.length === 0) {
       showError('No clinics are configured yet.');
       return;
@@ -85,6 +82,8 @@
     els.clinicSelect.innerHTML = clinics
       .map((c) => `<option value="${Number(c.clinic_id)}">${escapeHtml(c.clinic_name)}</option>`)
       .join('');
+    const remembered = sessionStorage.getItem('queueless_reception_clinic');
+    els.clinicSelect.value = clinics.some((clinic) => String(clinic.clinic_id) === remembered) ? remembered : String(clinics[0].clinic_id);
     loadDoctors(els.clinicSelect.value);
   }
 
@@ -92,15 +91,17 @@
      Department / doctor selection
      ========================================================== */
 
-  function loadDoctors(clinicId) {
+  async function loadDoctors(clinicId) {
     els.departmentSelect.disabled = true;
     els.doctorSelect.disabled = true;
     els.departmentSelect.innerHTML = '<option value="">Loading…</option>';
     els.doctorSelect.innerHTML = '<option value="">Select doctor…</option>';
     hideQueue();
 
-    state.doctors = D.getDoctors(clinicId);
-    const departments = D.getDepartments(clinicId);
+    const result = await Api.listDoctors(clinicId);
+    if (!result.success) { showError(result.message || 'Could not load doctors.'); return; }
+    state.doctors = result.data.doctors || [];
+    const departments = [...new Map(state.doctors.map((doctor) => [doctor.department_id, { department_id: doctor.department_id, department_name: doctor.department_name }])).values()];
 
     els.departmentSelect.innerHTML =
       '<option value="">Select department…</option>' +
@@ -159,12 +160,14 @@
      Queue
      ========================================================== */
 
-  function loadQueue() {
+  async function loadQueue() {
     const doctor = selectedDoctor();
     if (!doctor) return;
 
     try {
-      state.queue = D.getQueue(doctor.doctor_id, todayIso());
+      const result = await Api.receptionView(doctor.doctor_id, todayIso());
+      if (!result.success) throw new Error(result.message || 'Could not load the queue.');
+      state.queue = (result.data.queue || []).map((row) => Object.assign(row, { token_date: todayIso(), current_status: String(row.current_status || '').toLowerCase() }));
       renderQueue(doctor);
     } catch (err) {
       console.error('Queue load error:', err);
@@ -241,37 +244,39 @@
      Actions
      ========================================================== */
 
-  function callNext() {
+  async function callNext() {
     const doctor = selectedDoctor();
     if (!doctor) return;
 
-    const res = D.callNext(doctor.doctor_id);
+    const next = UI.findNextUp(state.queue);
+    const res = next ? await Api.startConsultation(Number(next.token_id)) : { success: false, message: 'No patient is ready to call.' };
     if (res.success) {
-      UI.toast(`Now consulting: #${res.data.token_number} ${res.data.patient_name || ''}`.trim(), 'success');
+      UI.toast(`Consultation started for token #${next.token_number}.`, 'success');
     } else {
       UI.toast(res.message || 'Could not call the next patient.', 'error');
     }
     loadQueue();
   }
 
-  function completeConsultation() {
+  async function completeConsultation() {
     const doctor = selectedDoctor();
     if (!doctor) return;
 
-    const res = D.completeConsultation(doctor.doctor_id);
+    const current = state.queue.find((token) => String(token.current_status).toLowerCase() === 'consulting');
+    const res = current ? await Api.completeConsultation(Number(current.token_id)) : { success: false, message: 'No consultation is in progress.' };
     if (res.success) {
-      UI.toast(`Consultation completed for ${res.data.patient_name || 'patient'} (#${res.data.token_number}).`, 'success');
+      UI.toast(`Consultation completed for token #${res.data.completed_token}.`, 'success');
     } else {
       UI.toast(res.message || 'Could not complete the consultation.', 'error');
     }
     loadQueue();
   }
 
-  function handleAction(action, tokenId) {
+  function handleAction(action, tokenId, button) {
     const token = state.queue.find((t) => Number(t.token_id) === tokenId);
     if (!token) return;
 
-    UI.handleRowAction(action, rowFromToken(token), () => loadQueue());
+    UI.handleRowAction(action, rowFromToken(token), () => loadQueue(), button);
   }
 
   /* ==========================================================

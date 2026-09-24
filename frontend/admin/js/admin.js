@@ -368,6 +368,9 @@
 
   function initHospitalsPage() {
     let clinics = [];
+    const expandedIds = new Set();
+    const deptCache = {}; // clinic_id -> departments array (undefined = not loaded yet)
+    const deptErrors = {}; // clinic_id -> safe error message from the last failed load
 
     const errorEl = document.getElementById('clinicsError');
     const errorTextEl = document.getElementById('clinicsErrorText');
@@ -383,17 +386,25 @@
     const formAlert = document.getElementById('clinicFormAlert');
     const saveBtn = document.getElementById('clinicSaveBtn');
 
+    const deptBackdrop = document.getElementById('departmentModalBackdrop');
+    const deptForm = document.getElementById('departmentForm');
+    const deptModalTitle = document.getElementById('departmentModalTitle');
+    const deptModalClinicName = document.getElementById('departmentModalClinicName');
+    const deptFormAlert = document.getElementById('departmentFormAlert');
+    const deptSaveBtn = document.getElementById('departmentSaveBtn');
+
     document.getElementById('addClinicBtn').addEventListener('click', () => openModal(null));
     document.getElementById('clinicCancelBtn').addEventListener('click', closeModal);
     retryBtn.addEventListener('click', load);
-
     form.addEventListener('submit', onSubmit);
+
+    document.getElementById('departmentCancelBtn').addEventListener('click', closeDeptModal);
+    deptForm.addEventListener('submit', onDeptSubmit);
 
     load();
 
     async function load() {
       errorEl.hidden = true;
-      tbody.innerHTML = '';
       emptyEl.hidden = true;
       loadingEl.hidden = false;
 
@@ -419,12 +430,14 @@
       }
       emptyEl.hidden = true;
 
-      tbody.innerHTML = clinics.map((c) => `
+      tbody.innerHTML = clinics.map((c) => {
+        const isExpanded = expandedIds.has(c.clinic_id);
+        const row = `
         <tr>
           <td>${escapeHtml(c.clinic_name)}</td>
           <td>${escapeHtml(c.address || '—')}</td>
           <td>${escapeHtml(c.phone || '—')}</td>
-          <td>${c.departments.length}</td>
+          <td><button type="button" class="dept-toggle-btn" data-dept-toggle="${c.clinic_id}">${c.departments.length} department${c.departments.length === 1 ? '' : 's'} ${isExpanded ? '▾' : '▸'}</button></td>
           <td>${simpleBadge(c.is_active ? 'completed' : 'cancelled', c.is_active ? 'Active' : 'Inactive')}</td>
           <td>
             <div class="row-actions">
@@ -434,8 +447,15 @@
               </button>
             </div>
           </td>
-        </tr>
-      `).join('');
+        </tr>`;
+
+        const subrow = isExpanded ? `
+        <tr class="dept-subrow">
+          <td colspan="6">${renderDeptPanel(c)}</td>
+        </tr>` : '';
+
+        return row + subrow;
+      }).join('');
 
       tbody.querySelectorAll('[data-edit]').forEach((btn) => {
         btn.addEventListener('click', () => {
@@ -449,7 +469,39 @@
           if (clinic) toggleActive(clinic);
         });
       });
+      tbody.querySelectorAll('[data-dept-toggle]').forEach((btn) => {
+        btn.addEventListener('click', () => onDeptToggleExpand(Number(btn.dataset.deptToggle)));
+      });
+      tbody.querySelectorAll('[data-add-dept]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const clinic = clinics.find((c) => c.clinic_id === Number(btn.dataset.addDept));
+          if (clinic) openDeptModal(clinic, null);
+        });
+      });
+      tbody.querySelectorAll('[data-dept-edit]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const clinic = clinics.find((c) => c.clinic_id === Number(btn.dataset.clinicId));
+          const dept = (deptCache[btn.dataset.clinicId] || []).find((d) => d.department_id === Number(btn.dataset.deptEdit));
+          if (clinic && dept) openDeptModal(clinic, dept);
+        });
+      });
+      tbody.querySelectorAll('[data-dept-toggle-active]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const dept = (deptCache[btn.dataset.clinicId] || []).find((d) => d.department_id === Number(btn.dataset.deptToggleActive));
+          if (dept) toggleDeptActive(dept);
+        });
+      });
+      tbody.querySelectorAll('[data-dept-retry]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const clinicId = Number(btn.dataset.deptRetry);
+          delete deptErrors[clinicId];
+          renderTable();
+          refreshDepartments(clinicId).then(renderTable);
+        });
+      });
     }
+
+    /* ---- Hospital modal ---- */
 
     function openModal(clinic) {
       form.reset();
@@ -525,6 +577,170 @@
       }
 
       showToast(toastEl, `Hospital ${action}d.`);
+      load();
+    }
+
+    /* ---- Departments (nested under a hospital row) ---- */
+
+    function renderDeptPanel(clinic) {
+      const depts = deptCache[clinic.clinic_id];
+      const error = deptErrors[clinic.clinic_id];
+
+      let body;
+      if (error) {
+        body = `
+          <div class="dept-error" role="alert">
+            <span>${escapeHtml(error)}</span>
+            <button type="button" class="btn-secondary" data-dept-retry="${clinic.clinic_id}">Retry</button>
+          </div>`;
+      } else if (depts === undefined) {
+        body = '<p class="dept-loading">Loading departments…</p>';
+      } else if (depts.length === 0) {
+        body = '<p class="dept-empty">No departments yet for this hospital.</p>';
+      } else {
+        body = `
+          <table class="dept-table">
+            <thead>
+              <tr><th>Name</th><th>Description</th><th>Status</th><th></th></tr>
+            </thead>
+            <tbody>
+              ${depts.map((d) => `
+                <tr>
+                  <td>${escapeHtml(d.department_name)}</td>
+                  <td>${escapeHtml(d.description || '—')}</td>
+                  <td>${simpleBadge(d.is_active ? 'completed' : 'cancelled', d.is_active ? 'Active' : 'Inactive')}</td>
+                  <td>
+                    <div class="row-actions">
+                      <button type="button" class="btn-link" data-dept-edit="${d.department_id}" data-clinic-id="${clinic.clinic_id}">Edit</button>
+                      <button type="button" class="btn-link ${d.is_active ? 'danger' : 'good'}" data-dept-toggle-active="${d.department_id}" data-clinic-id="${clinic.clinic_id}">
+                        ${d.is_active ? 'Deactivate' : 'Activate'}
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>`;
+      }
+
+      return `
+        <div class="dept-panel-header">
+          <span class="dept-panel-title">Departments — ${escapeHtml(clinic.clinic_name)}</span>
+          <button type="button" class="btn-link" data-add-dept="${clinic.clinic_id}">+ Add Department</button>
+        </div>
+        ${body}`;
+    }
+
+    function onDeptToggleExpand(clinicId) {
+      if (expandedIds.has(clinicId)) {
+        expandedIds.delete(clinicId);
+        renderTable();
+        return;
+      }
+      expandedIds.add(clinicId);
+      renderTable();
+      if (deptCache[clinicId] === undefined) {
+        refreshDepartments(clinicId).then(renderTable);
+      }
+    }
+
+    async function refreshDepartments(clinicId) {
+      const res = await Api.adminListDepartments(clinicId);
+
+      if (!res.success) {
+        // Never silently turn a failed load into an empty department list —
+        // that looks identical to "this hospital genuinely has none" and
+        // hides real API/DB problems from the admin. Show the safe message
+        // the backend gave us, and log the full response for debugging.
+        console.error('Failed to load departments for clinic', clinicId, res);
+        deptErrors[clinicId] = res.message || 'Could not load departments. Please try again.';
+        delete deptCache[clinicId];
+        return;
+      }
+
+      delete deptErrors[clinicId];
+      deptCache[clinicId] = res.data.departments;
+    }
+
+    function openDeptModal(clinic, dept) {
+      deptForm.reset();
+      clearFormErrors(deptForm, deptFormAlert);
+      document.getElementById('departmentId').value = dept ? dept.department_id : '';
+      document.getElementById('departmentClinicId').value = clinic.clinic_id;
+      document.getElementById('departmentName').value = dept ? dept.department_name : '';
+      document.getElementById('departmentDescription').value = dept ? (dept.description || '') : '';
+      document.getElementById('departmentActive').checked = dept ? dept.is_active : true;
+      deptModalTitle.textContent = dept ? 'Edit Department' : 'Add Department';
+      deptModalClinicName.textContent = clinic.clinic_name;
+      deptBackdrop.hidden = false;
+    }
+
+    function closeDeptModal() {
+      deptBackdrop.hidden = true;
+    }
+
+    async function onDeptSubmit(e) {
+      e.preventDefault();
+      clearFormErrors(deptForm, deptFormAlert);
+
+      const name = document.getElementById('departmentName').value.trim();
+      if (!name) {
+        showFieldError('departmentName', 'Department name is required.');
+        return;
+      }
+
+      const clinicId = Number(document.getElementById('departmentClinicId').value);
+      const payload = {
+        clinic_id: clinicId,
+        department_name: name,
+        description: document.getElementById('departmentDescription').value.trim(),
+        is_active: document.getElementById('departmentActive').checked,
+      };
+      const departmentId = document.getElementById('departmentId').value;
+      if (departmentId) payload.department_id = Number(departmentId);
+
+      deptSaveBtn.disabled = true;
+      const res = await Api.adminSaveDepartment(payload);
+      deptSaveBtn.disabled = false;
+
+      if (!res.success) {
+        if (res.errors) {
+          Object.entries(res.errors).forEach(([field, msg]) => {
+            const id = 'department' + field.charAt(0).toUpperCase() + field.slice(1).replace(/_([a-z])/g, (_, c) => c.toUpperCase());
+            showFieldError(id, msg);
+          });
+        }
+        deptFormAlert.textContent = res.message || 'Could not save department.';
+        deptFormAlert.hidden = false;
+        return;
+      }
+
+      closeDeptModal();
+      showToast(toastEl, departmentId ? 'Department updated.' : 'Department added.');
+      expandedIds.add(clinicId);
+      await refreshDepartments(clinicId);
+      load();
+    }
+
+    async function toggleDeptActive(dept) {
+      const action = dept.is_active ? 'deactivate' : 'activate';
+      if (!confirm(`Are you sure you want to ${action} the "${dept.department_name}" department?`)) return;
+
+      const res = await Api.adminSaveDepartment({
+        department_id: dept.department_id,
+        clinic_id: dept.clinic_id,
+        department_name: dept.department_name,
+        description: dept.description,
+        is_active: !dept.is_active,
+      });
+
+      if (!res.success) {
+        alert(res.message || 'Could not update department status.');
+        return;
+      }
+
+      showToast(toastEl, `Department ${action}d.`);
+      await refreshDepartments(dept.clinic_id);
       load();
     }
   }

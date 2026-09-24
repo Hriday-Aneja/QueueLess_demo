@@ -61,6 +61,7 @@
         <p class="empty-state" id="clinicsLoading">Loading hospitals…</p>
         <p class="empty-state" id="clinicsEmpty" hidden>No hospitals yet — add the first one above.</p>
       </div>
+      <p class="table-hint">Click a hospital's department count to view, add, edit or deactivate its departments.</p>
     </section>
 
   </main>
@@ -90,8 +91,14 @@
           <span class="field-error" id="clinicPhoneError"></span>
         </div>
 
-        <div class="form-group form-group-checkbox">
-          <label><input type="checkbox" id="clinicActive" checked> Active</label>
+        <div class="form-group form-group-toggle">
+          <label class="switch-label" for="clinicActive">
+            <span class="switch">
+              <input type="checkbox" id="clinicActive" checked>
+              <span class="switch-slider"></span>
+            </span>
+            <span class="switch-text">Active</span>
+          </label>
         </div>
 
         <div class="form-alert" id="clinicFormAlert" role="alert" hidden></div>
@@ -99,6 +106,47 @@
         <div class="modal-actions">
           <button type="button" class="btn-secondary" id="clinicCancelBtn">Cancel</button>
           <button type="submit" class="btn-primary" id="clinicSaveBtn">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Add / Edit Department modal -->
+  <div class="modal-backdrop" id="departmentModalBackdrop" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="departmentModalTitle">
+      <h2 class="modal-title" id="departmentModalTitle">Add Department</h2>
+      <p class="modal-subtitle" id="departmentModalClinicName"></p>
+      <form id="departmentForm" novalidate>
+        <input type="hidden" id="departmentId">
+        <input type="hidden" id="departmentClinicId">
+
+        <div class="form-group">
+          <label for="departmentName">Department Name</label>
+          <input type="text" id="departmentName" required maxlength="100">
+          <span class="field-error" id="departmentNameError"></span>
+        </div>
+
+        <div class="form-group">
+          <label for="departmentDescription">Description</label>
+          <textarea id="departmentDescription" rows="3" maxlength="1000"></textarea>
+          <span class="field-error" id="departmentDescriptionError"></span>
+        </div>
+
+        <div class="form-group form-group-toggle">
+          <label class="switch-label" for="departmentActive">
+            <span class="switch">
+              <input type="checkbox" id="departmentActive" checked>
+              <span class="switch-slider"></span>
+            </span>
+            <span class="switch-text">Active</span>
+          </label>
+        </div>
+
+        <div class="form-alert" id="departmentFormAlert" role="alert" hidden></div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" id="departmentCancelBtn">Cancel</button>
+          <button type="submit" class="btn-primary" id="departmentSaveBtn">Save</button>
         </div>
       </form>
     </div>

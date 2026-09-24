@@ -1,14 +1,12 @@
 /* ==========================================================
    QueueLess — Reception: Walk-In Flow
 
-   Mock-data build. Everything comes from ReceptionMockData
-   (reception-data.js) — no fetch(), no backend calls:
-     D.getClinics()                -> clinic picker
-     D.getDepartments(clinicId)    -> department picker
-     D.getDoctors(clinicId, deptId)-> doctor picker
-     D.getQueue(doctorId, date)    -> live queue preview
-     D.searchPatients(q, by)       -> existing-patient search
-     D.createWalkin(payload)       -> token number, position, ETA
+   Everything comes from the PHP API:
+     Api.listClinics()             -> clinic picker
+     Api.listDoctors(clinicId)     -> department and doctor pickers
+     Api.receptionView(...)        -> live queue preview
+     Api.receptionSearchPatients() -> existing-patient search
+     Api.createWalkin(payload)     -> token number, position, ETA
 
    The token number, queue position, patients-ahead and ETA shown on
    the ticket are exactly what the mock data layer returns; nothing is
@@ -20,7 +18,6 @@
 (function () {
   'use strict';
 
-  const D = ReceptionMockData;
   const UI = ReceptionUI;
   const { escapeHtml, escapeAttr, todayIso, formatFriendlyDate, doctorLabel } = UI;
 
@@ -42,10 +39,7 @@
 
   let els = {};
 
-  document.addEventListener('DOMContentLoaded', () => {
-    // reception.js has already guarded the page (redirects to index.html
-    // without a session) and wired logout / nav / user name.
-    if (!MockAuth.isLoggedIn()) return;
+  document.addEventListener('reception:ready', () => {
     initPage();
   });
 
@@ -107,8 +101,10 @@
     bootstrapClinics();
   }
 
-  function bootstrapClinics() {
-    const clinics = D.getClinics();
+  async function bootstrapClinics() {
+    const result = await Api.listClinics();
+    if (!result.success) { showError(result.message || 'Could not load clinics.'); return; }
+    const clinics = result.data.clinics || [];
     if (clinics.length === 0) {
       showError('No clinics are configured yet.');
       return;
@@ -116,6 +112,8 @@
     els.clinicSelect.innerHTML = clinics
       .map((c) => `<option value="${Number(c.clinic_id)}">${escapeHtml(c.clinic_name)}</option>`)
       .join('');
+    const remembered = sessionStorage.getItem('queueless_reception_clinic');
+    els.clinicSelect.value = clinics.some((clinic) => String(clinic.clinic_id) === remembered) ? remembered : String(clinics[0].clinic_id);
     loadDoctors(els.clinicSelect.value);
   }
 
@@ -123,7 +121,7 @@
      Department / doctor selection
      ========================================================== */
 
-  function loadDoctors(clinicId) {
+  async function loadDoctors(clinicId) {
     els.departmentSelect.disabled = true;
     els.doctorSelect.disabled = true;
     els.departmentSelect.innerHTML = '<option value="">Loading…</option>';
@@ -131,8 +129,10 @@
     updateSubmitState();
     clearPreview();
 
-    state.doctors = D.getDoctors(clinicId);
-    const departments = D.getDepartments(clinicId);
+    const result = await Api.listDoctors(clinicId);
+    if (!result.success) { showError(result.message || 'Could not load doctors.'); return; }
+    state.doctors = result.data.doctors || [];
+    const departments = [...new Map(state.doctors.map((doctor) => [doctor.department_id, { department_id: doctor.department_id, department_name: doctor.department_name }])).values()];
 
     els.departmentSelect.innerHTML =
       '<option value="">Select department…</option>' +
@@ -190,11 +190,13 @@
 
   /* ---- Live queue preview (mock queue) ------------------------------- */
 
-  function loadPreview() {
+  async function loadPreview() {
     const doctor = selectedDoctor();
     if (!doctor) return;
 
-    const queue = D.getQueue(doctor.doctor_id, todayIso());
+    const result = await Api.receptionView(doctor.doctor_id, todayIso());
+    if (!result.success) { showError(result.message || 'Could not load the queue preview.'); return; }
+    const queue = (result.data.queue || []).map((row) => Object.assign(row, { current_status: String(row.current_status || '').toLowerCase() }));
     const current = queue.find((t) => t.current_status === 'consulting');
     const next = UI.findNextUp(queue);
     const waiting = queue.filter((t) => WAITING_STATUSES.includes(t.current_status)).length;
@@ -231,7 +233,7 @@
     else els.patientName.focus();
   }
 
-  function searchExistingPatient() {
+  async function searchExistingPatient() {
     const q = els.patientSearchInput.value.trim();
     if (q.length < MIN_QUERY_LENGTH) {
       showError(`Please enter at least ${MIN_QUERY_LENGTH} characters to search.`);
@@ -239,7 +241,9 @@
     }
     els.pageError.hidden = true;
 
-    state.patients = D.searchPatients(q, 'all');
+    const result = await Api.receptionSearchPatients(q);
+    if (!result.success) { showError(result.message || 'Could not search patients.'); return; }
+    state.patients = result.data.patients || [];
     els.patientNoResults.hidden = state.patients.length > 0;
     els.patientResults.innerHTML = state.patients
       .map(
@@ -277,7 +281,7 @@
      Submit
      ========================================================== */
 
-  function submitWalkin() {
+  async function submitWalkin() {
     els.pageError.hidden = true;
     clearAllFieldErrors();
 
@@ -310,20 +314,6 @@
       return;
     }
 
-    // A phone that already belongs to a registered patient would clash
-    // (phone numbers are unique), so catch it early and point the user
-    // to the existing record.
-    if (!existing && phone) {
-      const match = D.searchPatients(phone, 'phone').find(
-        (p) => normalizePhone(p.phone) === normalizePhone(phone)
-      );
-      if (match) {
-        showFieldErrors({ patient_phone: `Already registered to ${match.full_name} (${match.patient_code}).` });
-        showError('This phone number belongs to an existing patient. Switch to “Existing patient” to use their record.');
-        return;
-      }
-    }
-
     const payload = {
       doctor_id: Number(doctor.doctor_id),
       patient_name: name,
@@ -332,7 +322,7 @@
     if (phone) payload.patient_phone = phone;
     if (existing) payload.patient_id = Number(state.selectedPatient.patient_id);
 
-    const res = D.createWalkin(payload);
+    const res = await Api.createWalkin(payload);
 
     if (!res.success) {
       if (res.errors && typeof res.errors === 'object') showFieldErrors(res.errors);

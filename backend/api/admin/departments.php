@@ -26,22 +26,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     }
 
     $clinicId = (int) $_GET['clinic_id'];
-    if (Clinic::findById($clinicId) === null) {
-        Response::error('Hospital/clinic not found.', 404);
+
+    try {
+        if (Clinic::findById($clinicId) === null) {
+            Response::error('Hospital/clinic not found.', 404);
+        }
+
+        $rows = Department::listAllByClinicForAdmin($clinicId);
+        $departments = array_map(function (array $r): array {
+            return [
+                'department_id'   => (int) $r['department_id'],
+                'clinic_id'       => (int) $r['clinic_id'],
+                'department_name' => $r['department_name'],
+                'description'     => $r['description'],
+                'is_active'       => (bool) $r['is_active'],
+            ];
+        }, $rows);
+
+        Response::success(['departments' => $departments]);
+    } catch (Throwable $e) {
+        // Never let a DB/SQL error reach the client (stack trace, table/column
+        // names, credentials, etc.) and never let an uncaught error produce a
+        // non-JSON response — that's what breaks the admin UI silently.
+        error_log('[admin/departments.php][GET clinic_id=' . $clinicId . '] ' . $e->getMessage());
+        Response::error('Could not load departments right now. Please try again.', 500);
     }
-
-    $rows = Department::listAllByClinicForAdmin($clinicId);
-    $departments = array_map(function (array $r): array {
-        return [
-            'department_id'   => (int) $r['department_id'],
-            'clinic_id'       => (int) $r['clinic_id'],
-            'department_name' => $r['department_name'],
-            'description'     => $r['description'],
-            'is_active'       => (bool) $r['is_active'],
-        ];
-    }, $rows);
-
-    Response::success(['departments' => $departments]);
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -62,36 +71,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $isActive    = array_key_exists('is_active', $input) ? (bool) $input['is_active'] : true;
     $departmentId = isset($input['department_id']) ? (int) $input['department_id'] : null;
 
-    if (Clinic::findById($clinicId) === null) {
-        Response::error('Hospital/clinic not found.', 404);
-    }
+    try {
+        if (Clinic::findById($clinicId) === null) {
+            Response::error('Hospital/clinic not found.', 404);
+        }
 
-    if ($departmentId !== null) {
-        // ---- Update (also covers activate/deactivate) ----
-        $existing = Department::findById($departmentId);
-        if ($existing === null) {
-            Response::error('Department not found.', 404);
+        if ($departmentId !== null) {
+            // ---- Update (also covers activate/deactivate) ----
+            $existing = Department::findById($departmentId);
+            if ($existing === null) {
+                Response::error('Department not found.', 404);
+            }
+            if ((int) $existing['clinic_id'] !== $clinicId) {
+                Response::error('This department does not belong to the selected hospital.', 422);
+            }
+            if (Department::nameExistsInClinic($clinicId, $name, $departmentId)) {
+                Response::error('This hospital already has a department with this name.', 409, ['department_name' => 'This name is already in use.']);
+            }
+
+            Department::update($departmentId, $name, $description, $isActive);
+
+            Response::success(['department_id' => $departmentId]);
         }
-        if ((int) $existing['clinic_id'] !== $clinicId) {
-            Response::error('This department does not belong to the selected hospital.', 422);
-        }
-        if (Department::nameExistsInClinic($clinicId, $name, $departmentId)) {
+
+        // ---- Create ----
+        if (Department::nameExistsInClinic($clinicId, $name)) {
             Response::error('This hospital already has a department with this name.', 409, ['department_name' => 'This name is already in use.']);
         }
 
-        Department::update($departmentId, $name, $description, $isActive);
+        $newId = Department::create($clinicId, $name, $description, $isActive);
 
-        Response::success(['department_id' => $departmentId]);
+        Response::success(['department_id' => $newId], 201);
+    } catch (Throwable $e) {
+        error_log('[admin/departments.php][POST clinic_id=' . $clinicId . '] ' . $e->getMessage());
+        Response::error('Could not save the department right now. Please try again.', 500);
     }
-
-    // ---- Create ----
-    if (Department::nameExistsInClinic($clinicId, $name)) {
-        Response::error('This hospital already has a department with this name.', 409, ['department_name' => 'This name is already in use.']);
-    }
-
-    $newId = Department::create($clinicId, $name, $description, $isActive);
-
-    Response::success(['department_id' => $newId], 201);
 }
 
 Response::error('Method not allowed.', 405);

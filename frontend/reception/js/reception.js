@@ -2,14 +2,13 @@
    QueueLess — Reception Module Shared UI Layer
    frontend/reception/js/reception.js
 
-   Pure front-end. No fetch(), no backend/api calls, no queue engine logic.
+  Shared reception UI and API-backed session/action handling.
    Provides:
      - ReceptionUI : formatting / render helpers + the confirm dialog and
                      row-action handling shared by the Patients and Queue pages
      - App shell   : session guard, user name, active nav, logout
-     - Login       : index.html form handling (via MockAuth)
+    - Login       : index.html form handling
 
-   Depends on reception-data.js (ReceptionMockData, MockAuth) — load that first.
    Page scripts (reception-dashboard.js etc.) load after this file.
    ========================================================================== */
 
@@ -39,6 +38,10 @@
     requeue: { label: 'Requeue', cls: 'btn-secondary btn-sm' },
     cancel: { label: 'Cancel', cls: 'btn-danger btn-sm' }
   };
+
+  function normalizeStatus(status) {
+    return String(status || 'unknown').toLowerCase();
+  }
 
   /* ------------------------------------------------------------------ *
    * 2. ReceptionUI — shared helpers
@@ -87,8 +90,9 @@
     },
 
     statusBadge: function (status) {
+      status = normalizeStatus(status);
       var label = (STATUS_LABELS[status] || status || 'unknown').replace(/_/g, ' ');
-      return '<span class="badge badge-' + ReceptionUI.escapeAttr(status || 'unknown') + '">' + ReceptionUI.escapeHtml(label) + '</span>';
+      return '<span class="badge badge-' + ReceptionUI.escapeAttr(status) + '">' + ReceptionUI.escapeHtml(label) + '</span>';
     },
 
     priorityBadge: function (priority) {
@@ -130,6 +134,7 @@
      * row: { tokenId, status, date }
      */
     actionsFor: function (row) {
+      row.status = normalizeStatus(row.status);
       if (row.tokenId === null || row.tokenId === undefined) return [];
       var isToday = row.date === ReceptionUI.todayIso();
       var out = [];
@@ -173,11 +178,12 @@
      * patientName, status, date }. onDone(result) fires after the toast so
      * the page can re-read the queue.
      */
-    handleRowAction: function (action, row, onDone) {
-      var D = global.ReceptionMockData;
+    handleRowAction: async function (action, row, onDone, button) {
       var who = row.patientName + (row.tokenNumber !== null && row.tokenNumber !== undefined ? ' (token #' + row.tokenNumber + ')' : '');
 
-      function finish(res, successMessage) {
+      if (button) button.disabled = true;
+
+      async function finish(res, successMessage) {
         if (res.success) {
           if (successMessage) {
             ReceptionUI.toast(successMessage, 'success');
@@ -189,63 +195,66 @@
         } else {
           ReceptionUI.toast(friendlyFailure(res, row), 'error');
         }
-        if (onDone) onDone(res);
+        if (res && res.status === 401) window.location.href = 'index.html';
+        if (onDone) await onDone(res);
       }
+      try {
+        switch (action) {
+          case 'checkin':
+            await finish(await Api.checkIn(row.tokenId), row.patientName + ' checked in.');
+            return;
 
-      switch (action) {
-        case 'checkin':
-          finish(D.checkIn(row.tokenId), row.patientName + ' checked in.');
-          return Promise.resolve();
-
-        case 'noshow':
-          return askConfirm({
+          case 'noshow':
+            var noShowChoice = await askConfirm({
             title: 'Mark as no-show?',
             message: who + ' will be removed from the active queue. If they turn up later you can handle it as a late arrival.',
             actions: [{ label: 'Mark no-show', value: 'yes', cls: 'btn-danger' }]
-          }).then(function (choice) {
-            if (choice !== 'yes') return;
-            finish(D.markNoShow(row.tokenId), row.patientName + ' marked as no-show.');
-          });
+            });
+            if (noShowChoice === 'yes') await finish(await Api.markNoShow(row.tokenId), row.patientName + ' marked as no-show.');
+            return;
 
-        case 'cancel':
-          return askConfirm({
+          case 'cancel':
+            var cancelChoice = await askConfirm({
             title: 'Cancel this appointment?',
             message: who + ' will be cancelled and everyone behind them moves up. This can\u2019t be undone.',
             actions: [{ label: 'Cancel appointment', value: 'yes', cls: 'btn-danger' }],
             dismissLabel: 'Keep appointment'
-          }).then(function (choice) {
-            if (choice !== 'yes') return;
-            finish(D.cancelToken(row.tokenId), 'Appointment cancelled.');
-          });
+            });
+            if (cancelChoice === 'yes') await finish(await Api.cancelAppointment({ token_id: row.tokenId }), 'Appointment cancelled.');
+            return;
 
-        case 'late':
-          return askConfirm({
+          case 'late':
+            var lateChoice = await askConfirm({
             title: 'Handle late arrival',
             message: who + ' has arrived after their turn was given up. Requeuing places them at the back of the queue; it never interrupts the consultation in progress.',
             actions: [
               { label: 'Mark late only', value: 'late', cls: 'btn-secondary' },
               { label: 'Mark late & requeue', value: 'requeue', cls: 'btn-primary' }
             ]
-          }).then(function (choice) {
-            if (!choice) return;
-            var late = D.markLate(row.tokenId);
-            if (!late.success || choice === 'late') {
-              finish(late, choice === 'late' ? row.patientName + ' marked as late.' : null);
+            });
+            if (!lateChoice) return;
+            var late = await Api.markLate(row.tokenId);
+            if (!late.success || lateChoice === 'late') {
+              await finish(late, lateChoice === 'late' ? row.patientName + ' marked as late.' : null);
               return;
             }
-            var rq = D.requeue(row.tokenId);
-            if (!rq.success) {
-              rq.message = 'Marked late, but requeue failed: ' + rq.message;
-            }
-            finish(rq, null);
-          });
+            var rq = await Api.requeue(row.tokenId);
+            if (!rq.success) rq.message = 'Marked late, but requeue failed: ' + rq.message;
+            await finish(rq, null);
+            return;
 
-        case 'requeue':
-          finish(D.requeue(row.tokenId), null);
-          return Promise.resolve();
+          case 'requeue':
+            await finish(await Api.requeue(row.tokenId), null);
+            return;
 
-        default:
-          return Promise.resolve();
+          default:
+            return;
+        }
+      } catch (error) {
+        console.error('Reception action error:', error);
+        ReceptionUI.toast('Could not complete that action.', 'error');
+      } finally {
+        if (button) button.disabled = false;
       }
     },
 
@@ -335,11 +344,11 @@
    * ------------------------------------------------------------------ */
 
   function renderShell(session) {
-    var user = session.user || {};
+    var user = session || {};
 
     var userNameEl = document.getElementById('receptionUserName');
     if (userNameEl) {
-      userNameEl.textContent = user.full_name || 'Reception User';
+      userNameEl.textContent = user.name || 'Reception User';
     }
 
     var page = window.location.pathname.split('/').pop().replace('.html', '') || 'dashboard';
@@ -350,8 +359,8 @@
     var logoutBtn = document.getElementById('logoutBtn');
     if (logoutBtn) {
       logoutBtn.addEventListener('click', function () {
-        global.MockAuth.logout();
-        window.location.href = 'index.html';
+        logoutBtn.disabled = true;
+        Api.logout().then(function () { window.location.href = 'index.html'; });
       });
     }
   }
@@ -363,12 +372,6 @@
   function wireLoginForm() {
     var form = document.getElementById('loginForm');
     if (!form) return;
-
-    // Already signed in — no reason to show the login form again.
-    if (global.MockAuth.isLoggedIn()) {
-      window.location.href = 'dashboard.html';
-      return;
-    }
 
     var emailInput = document.getElementById('email');
     var passwordInput = document.getElementById('password');
@@ -384,21 +387,34 @@
 
       if (submitBtn) submitBtn.disabled = true;
 
-      // Mock auth is synchronous, but a tiny delay keeps the UI honest.
-      window.setTimeout(function () {
-        var result = global.MockAuth.login(email, password);
-
+      Api.login({ email: email, password: password }).then(function (result) {
         if (!result.success) {
           if (errorEl) {
-            errorEl.textContent = result.message || 'Invalid credentials';
+            var fieldErrors = result.errors ? ' ' + Object.values(result.errors).join(' ') : '';
+            errorEl.textContent = (result.message || 'Invalid credentials') + fieldErrors;
             errorEl.style.display = 'block';
           }
           if (submitBtn) submitBtn.disabled = false;
           return;
         }
-
+        if (!result.data || result.data.role !== 'reception') {
+          Api.logout();
+          if (errorEl) {
+            errorEl.textContent = 'This portal is for reception accounts only.';
+            errorEl.style.display = 'block';
+          }
+          if (submitBtn) submitBtn.disabled = false;
+          return;
+        }
         window.location.href = 'dashboard.html';
-      }, 300);
+      }).catch(function (error) {
+        console.error('Reception login error:', error);
+        if (errorEl) {
+          errorEl.textContent = 'Could not sign in. Please try again.';
+          errorEl.style.display = 'block';
+        }
+        if (submitBtn) submitBtn.disabled = false;
+      });
     });
   }
 
@@ -407,17 +423,24 @@
    * ------------------------------------------------------------------ */
 
   document.addEventListener('DOMContentLoaded', function () {
-    try {
+    window.addEventListener('queueless:unauthorized', function () {
+      if (document.body.getAttribute('data-requires-auth')) window.location.href = 'index.html';
+    });
+      try {
       var protectedPage = document.body.getAttribute('data-requires-auth');
 
       if (protectedPage) {
-        global.MockAuth.guard(); // redirects to index.html if not logged in
-        var session = global.MockAuth.getSession();
-        if (!global.MockAuth.isLoggedIn() || !session) return;
-
-        renderShell(session);
-        wireConfirmDialog();
-        document.body.hidden = false;
+        Api.me().then(function (result) {
+          if (!result.success || !result.data || result.data.role !== 'reception') {
+            window.location.href = 'index.html';
+            return;
+          }
+          renderShell(result.data);
+          wireConfirmDialog();
+          document.body.hidden = false;
+          document.dispatchEvent(new Event('reception:ready'));
+        }).catch(function () { window.location.href = 'index.html'; });
+        return;
       }
 
       wireLoginForm();

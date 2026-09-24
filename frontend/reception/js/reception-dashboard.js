@@ -1,16 +1,12 @@
 /* ==========================================================
    QueueLess — Reception Dashboard JS
 
-   Mock-data build: reads clinics, doctors and each doctor's
-   queue from ReceptionMockData (reception-data.js). No fetch(),
-   no backend calls. This file only aggregates that data for
-   display (KPI totals, department grouping, doctor cards).
+  Reads clinics, doctors and each doctor's queue from the PHP API.
    ========================================================== */
 
 (function () {
   'use strict';
 
-  const D = ReceptionMockData;
   const UI = ReceptionUI;
   const { escapeHtml, escapeAttr, todayIso, formatFriendlyDate, doctorLabel } = UI;
 
@@ -27,10 +23,7 @@
   let doctorsCache = [];       // doctor list for the selected clinic
   let latestByDoctor = {};     // doctor_id -> { doctor, queue: [...] }
 
-  document.addEventListener('DOMContentLoaded', () => {
-    // reception.js has already guarded the page (redirects to index.html
-    // without a session) and wired logout / nav / user name.
-    if (!MockAuth.isLoggedIn()) return;
+  document.addEventListener('reception:ready', () => {
     initDashboard();
   });
 
@@ -60,8 +53,10 @@
 
     bootstrapClinics();
 
-    function bootstrapClinics() {
-      const clinics = D.getClinics();
+    async function bootstrapClinics() {
+      const result = await Api.listClinics();
+      if (!result.success) { showError(result.message || 'Could not load clinics.'); return; }
+      const clinics = result.data.clinics || [];
       if (clinics.length === 0) {
         showError('No clinics are configured yet.');
         return;
@@ -71,13 +66,15 @@
         .map((c) => `<option value="${c.clinic_id}">${escapeHtml(c.clinic_name)}</option>`)
         .join('');
 
+      const remembered = sessionStorage.getItem('queueless_reception_clinic');
+      clinicSelect.value = clinics.some((clinic) => String(clinic.clinic_id) === remembered) ? remembered : String(clinics[0].clinic_id);
       load({ silent: false });
 
       refreshTimer = setInterval(() => load({ silent: true }), AUTO_REFRESH_MS);
       window.addEventListener('beforeunload', () => clearInterval(refreshTimer));
     }
 
-    function load({ silent }) {
+    async function load({ silent }) {
       if (!silent) {
         errorEl.hidden = true;
         contentEl.hidden = true;
@@ -86,15 +83,20 @@
 
       const clinicId = clinicSelect.value;
       if (!clinicId) return;
+      sessionStorage.setItem('queueless_reception_clinic', clinicId);
 
       try {
-        doctorsCache = D.getDoctors(clinicId);
+        const doctorResult = await Api.listDoctors(clinicId);
+        if (!doctorResult.success) throw new Error(doctorResult.message || 'Could not load doctors.');
+        doctorsCache = doctorResult.data.doctors || [];
         const today = todayIso();
 
         latestByDoctor = {};
-        doctorsCache.forEach((doc) => {
-          latestByDoctor[doc.doctor_id] = { doctor: doc, queue: D.getQueue(doc.doctor_id, today) };
-        });
+        await Promise.all(doctorsCache.map(async (doc) => {
+          const queueResult = await Api.receptionView(doc.doctor_id, today);
+          if (!queueResult.success) throw new Error(queueResult.message || 'Could not load queue.');
+          latestByDoctor[doc.doctor_id] = { doctor: doc, queue: (queueResult.data.queue || []).map((row) => Object.assign(row, { token_date: today, current_status: String(row.current_status || '').toLowerCase() })) };
+        }));
 
         renderDashboard(Object.values(latestByDoctor));
       } catch (err) {

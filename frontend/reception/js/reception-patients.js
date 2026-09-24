@@ -1,17 +1,13 @@
 /* ==========================================================
    QueueLess — Reception: Patient Search & Appointment Management
 
-   Mock-data build: patient lookup, appointment listing and every
-   row action (check in / no-show / late / requeue / cancel) run
-   against ReceptionMockData (reception-data.js). No fetch(), no
-   backend calls. The action buttons, confirm dialogs and toasts
-   are shared with the Queue page via ReceptionUI (reception.js).
+  Patient lookup and appointment actions use the PHP API. The action
+  buttons, confirm dialogs and toasts are shared with the Queue page.
    ========================================================== */
 
 (function () {
   'use strict';
 
-  const D = ReceptionMockData;
   const UI = ReceptionUI;
   const { escapeHtml, todayIso, formatFriendlyDate, formatShortDate, statusBadge, priorityBadge } = UI;
 
@@ -36,10 +32,7 @@
 
   let els = {};
 
-  document.addEventListener('DOMContentLoaded', () => {
-    // reception.js has already guarded the page (redirects to index.html
-    // without a session) and wired logout / nav / user name.
-    if (!MockAuth.isLoggedIn()) return;
+  document.addEventListener('reception:ready', () => {
     initPage();
   });
 
@@ -98,7 +91,7 @@
     els.appointmentsBody.addEventListener('click', (e) => {
       const btn = e.target.closest('button[data-action]');
       if (!btn || btn.disabled) return;
-      handleAction(btn.dataset.action, Number(btn.dataset.tokenId));
+      handleAction(btn.dataset.action, Number(btn.dataset.tokenId), btn);
     });
 
     state.refreshTimer = setInterval(() => {
@@ -119,7 +112,7 @@
      Search: patient list -> appointments
      ========================================================== */
 
-  function runSearch() {
+  async function runSearch() {
     const q = els.searchInput.value.trim();
     if (q.length < MIN_QUERY_LENGTH) {
       showError(`Please enter at least ${MIN_QUERY_LENGTH} characters to search.`);
@@ -132,7 +125,9 @@
     state.rows = [];
     resetResults();
 
-    state.patients = D.searchPatients(q, state.searchBy);
+    const result = await Api.receptionSearchPatients(q);
+    if (!result.success) { showError(result.message || 'Could not search patients.'); return; }
+    state.patients = result.data.patients || [];
     renderPatients();
     if (state.patients.length === 1) selectPatient(state.patients[0]);
   }
@@ -177,11 +172,15 @@
     loadPatientAppointments();
   }
 
-  function loadPatientAppointments() {
+  async function loadPatientAppointments() {
     const patient = state.selectedPatient;
     if (!patient) return;
 
-    state.rows = D.getPatientAppointments(patient.patient_id).map((a) => normalizeRow(a, patient));
+    const result = await Api.receptionSearchPatients(patient.patient_code || patient.full_name, patient.patient_id);
+    if (!result.success) { showError(result.message || 'Could not load appointments.'); return; }
+    const fresh = (result.data.patients || [])[0] || patient;
+    state.selectedPatient = fresh;
+    state.rows = (fresh.appointments || []).map((a) => normalizeRow(a, fresh));
     renderAppointments();
     stamp();
   }
@@ -208,7 +207,7 @@
       department: item.department_name || '',
       type: item.token_type || item.appointment_type || '—',
       priority: item.priority || 'normal',
-      status: item.current_status || item.appointment_status || 'unknown',
+      status: String(item.current_status || item.appointment_status || 'unknown').toLowerCase(),
       position: item.queue_position != null ? item.queue_position : null,
       eta: item.estimated_wait_minutes != null ? item.estimated_wait_minutes : null,
     };
@@ -250,14 +249,14 @@
      live in ReceptionUI.handleRowAction, shared with Queue)
      ========================================================== */
 
-  function handleAction(action, tokenId) {
+  function handleAction(action, tokenId, button) {
     const row = state.rows.find((r) => r.tokenId === tokenId);
     if (!row) return;
 
     UI.handleRowAction(action, row, () => {
       // Always re-read so the table reflects reshuffled positions/ETAs.
       refreshCurrent();
-    });
+    }, button);
   }
 
   /* ==========================================================
