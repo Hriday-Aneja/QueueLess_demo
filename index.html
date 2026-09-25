@@ -267,6 +267,7 @@ input[aria-invalid="true"]:focus { box-shadow: 0 0 0 4px rgba(194,37,92,0.10), i
         <button type="button" class="auth-tab" role="radio" aria-checked="false" data-mode="signup">Sign Up</button>
       </div>
       <h3 class="card-title" id="card-title">Welcome back</h3>
+      <p class="error" id="auth-error" role="alert"></p>
 
       <!-- SIGN IN -->
       <form id="signin-form" novalidate>
@@ -334,9 +335,9 @@ input[aria-invalid="true"]:focus { box-shadow: 0 0 0 4px rgba(194,37,92,0.10), i
   </section>
 </main>
 
+<script src="frontend/shared/js/api-client.js"></script>
 <script>
 (function () {
-  // Demo only: role and mode live in memory. Nothing is saved or sent anywhere.
   var selectedRole = null;   // "patient" | "doctor" | "receptionist" | "admin"
   var authMode = 'signin';   // "signin" | "signup"
   var ROLES = {
@@ -345,6 +346,13 @@ input[aria-invalid="true"]:focus { box-shadow: 0 0 0 4px rgba(194,37,92,0.10), i
     receptionist: { label: 'Receptionist', line: 'Manage arrivals and keep the queue moving.' },
     admin:        { label: 'Admin',        line: 'Set up clinics, staff and system operations.' }
   };
+  var ROLE_REDIRECTS = {
+    patient: 'frontend/patient/dashboard.html',
+    doctor: 'frontend/doctor/dashboard.html',
+    receptionist: 'frontend/reception/dashboard.html',
+    admin: 'frontend/admin/dashboard.html'
+  };
+  var API_ROLES = { receptionist: 'reception' };
   var SIGNIN_FIELDS = ['si-email', 'si-password'];
   var SIGNUP_FIELDS = ['fullName', 'email', 'phone', 'password', 'confirm'];
   var ALL_FIELDS = SIGNIN_FIELDS.concat(SIGNUP_FIELDS);
@@ -358,6 +366,9 @@ input[aria-invalid="true"]:focus { box-shadow: 0 0 0 4px rgba(194,37,92,0.10), i
   var signinForm = document.getElementById('signin-form');
   var signupForm = document.getElementById('signup-form');
   var success = document.getElementById('success');
+  var authError = document.getElementById('auth-error');
+  var signupTab = document.querySelector('[data-mode="signup"]');
+  var signupLinks = document.querySelectorAll('[data-switch="signup"]');
 
   function updateHeading() {
     if (!selectedRole) return;
@@ -371,14 +382,16 @@ input[aria-invalid="true"]:focus { box-shadow: 0 0 0 4px rgba(194,37,92,0.10), i
 
   function setAuthMode(mode) {
     authMode = mode;
+    if (authMode === 'signup' && selectedRole !== 'patient') authMode = 'signin';
     tabs.forEach(function (t) {
       var on = t.getAttribute('data-mode') === mode;
       t.classList.toggle('selected', on);
       t.setAttribute('aria-checked', on ? 'true' : 'false');
     });
-    signinForm.hidden = mode !== 'signin';
-    signupForm.hidden = mode !== 'signup';
+    signinForm.hidden = authMode !== 'signin';
+    signupForm.hidden = authMode !== 'signup';
     success.hidden = true;
+    authError.textContent = '';
     clearErrors(ALL_FIELDS);
     updateHeading();
   }
@@ -390,7 +403,9 @@ input[aria-invalid="true"]:focus { box-shadow: 0 0 0 4px rgba(194,37,92,0.10), i
       c.classList.toggle('selected', on);
       c.setAttribute('aria-checked', on ? 'true' : 'false');
     });
-    setAuthMode(authMode);
+    signupTab.hidden = role !== 'patient';
+    signupLinks.forEach(function (link) { link.hidden = role !== 'patient'; });
+    setAuthMode(role === 'patient' ? authMode : 'signin');
     if (section.hidden) {
       section.hidden = false;
       var calm = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -465,6 +480,26 @@ input[aria-invalid="true"]:focus { box-shadow: 0 0 0 4px rgba(194,37,92,0.10), i
     success.hidden = false;
   }
 
+  function setBusy(form, busy) {
+    Array.prototype.forEach.call(form.querySelectorAll('button'), function (button) {
+      button.disabled = busy;
+    });
+  }
+
+  function showAuthError(message) {
+    authError.textContent = message || 'Something went wrong. Please try again.';
+    authError.focus();
+  }
+
+  function redirectForRole(role) {
+    var expectedRole = API_ROLES[selectedRole] || selectedRole;
+    if (role !== expectedRole) {
+      showAuthError('This account is not registered for the selected role. Choose the correct role and try again.');
+      return;
+    }
+    window.location.href = ROLE_REDIRECTS[selectedRole];
+  }
+
   cards.forEach(function (c) {
     c.addEventListener('click', function () { selectRole(c.getAttribute('data-role')); });
   });
@@ -482,11 +517,40 @@ input[aria-invalid="true"]:focus { box-shadow: 0 0 0 4px rgba(194,37,92,0.10), i
 
   signinForm.addEventListener('submit', function (e) {
     e.preventDefault();
-    if (validateSignIn()) showSuccess();
+    if (!validateSignIn()) return;
+    authError.textContent = '';
+    setBusy(signinForm, true);
+    Api.login({ email: val('si-email').trim(), password: val('si-password') })
+      .then(function (response) {
+        if (!response.success) {
+          showAuthError(response.message);
+          return;
+        }
+        redirectForRole(response.data.role);
+      })
+      .catch(function () { showAuthError('Unable to sign in right now. Please try again.'); })
+      .finally(function () { setBusy(signinForm, false); });
   });
   signupForm.addEventListener('submit', function (e) {
     e.preventDefault();
-    if (validateSignUp()) showSuccess();
+    if (!validateSignUp()) return;
+    authError.textContent = '';
+    setBusy(signupForm, true);
+    Api.register({
+      full_name: val('fullName').trim(),
+      email: val('email').trim(),
+      phone: val('phone').trim(),
+      password: val('password')
+    })
+      .then(function (response) {
+        if (!response.success) {
+          showAuthError(response.message);
+          return;
+        }
+        window.location.href = ROLE_REDIRECTS.patient;
+      })
+      .catch(function () { showAuthError('Unable to create your account right now. Please try again.'); })
+      .finally(function () { setBusy(signupForm, false); });
   });
   ALL_FIELDS.forEach(function (id) {
     document.getElementById(id).addEventListener('input', function () {
