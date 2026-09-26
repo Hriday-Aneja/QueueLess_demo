@@ -297,6 +297,7 @@
         <tr>
           <td>#${t.token_number}</td>
           <td>${escapeHtml(t.patient_name || '—')}</td>
+          <td>${escapeHtml(t.appointment_time ? String(t.appointment_time).slice(0, 5) : 'Walk-in')}</td>
           <td>${escapeHtml(t.token_type || '—')}</td>
           <td>${priorityBadge(t.priority)}</td>
           <td>${statusBadge(t.current_status)}</td>

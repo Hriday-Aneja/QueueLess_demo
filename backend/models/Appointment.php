@@ -50,6 +50,22 @@ class Appointment
         $stmt->execute(['id' => $appointmentId]);
     }
 
+    public static function markCheckedIn(int $appointmentId): void
+    {
+        $stmt = get_db_connection()->prepare(
+            "UPDATE appointments SET status = 'checked_in', checked_in_at = NOW() WHERE appointment_id = :id"
+        );
+        $stmt->execute(['id' => $appointmentId]);
+    }
+
+    public static function markNoShow(int $appointmentId): void
+    {
+        $stmt = get_db_connection()->prepare(
+            "UPDATE appointments SET status = 'no_show' WHERE appointment_id = :id"
+        );
+        $stmt->execute(['id' => $appointmentId]);
+    }
+
     public static function countForDoctorAndDate(int $doctorId, string $date): int
     {
         $stmt = get_db_connection()->prepare(
@@ -85,6 +101,7 @@ class Appointment
             'SELECT a.appointment_id, a.appointment_date, a.appointment_time,
                     a.status AS appointment_status, a.priority,
                     d.doctor_id, d.doctor_code, d.specialization,
+                    u.full_name AS doctor_name,
                     dep.department_name,
                     t.token_id, t.token_number, t.token_date, t.token_type,
                     qs.current_status, qs.queue_position, qs.estimated_wait_minutes

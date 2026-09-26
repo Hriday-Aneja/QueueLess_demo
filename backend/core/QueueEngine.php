@@ -125,7 +125,11 @@ class QueueEngine
 
     public static function checkIn(int $tokenId): array
     {
+        $token = self::requireToken($tokenId);
         QueueStatus::transition($tokenId, QueueStateMachine::CHECKED_IN);
+        if (!empty($token['appointment_id'])) {
+            Appointment::markCheckedIn((int) $token['appointment_id']);
+        }
         return ['status' => QueueStateMachine::CHECKED_IN];
     }
 
@@ -133,6 +137,9 @@ class QueueEngine
     {
         $token = self::requireToken($tokenId);
         QueueStatus::transition($tokenId, QueueStateMachine::NO_SHOW);
+        if (!empty($token['appointment_id'])) {
+            Appointment::markNoShow((int) $token['appointment_id']);
+        }
         QueueEvents::afterNoShow((int) $token['doctor_id'], $token['token_date']);
         return ['status' => QueueStateMachine::NO_SHOW];
     }

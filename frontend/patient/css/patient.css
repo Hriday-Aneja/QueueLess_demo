@@ -1,13 +1,4 @@
-/* ==========================================================================
-   QueueLess — frontend/patient/css/patient.css
-   Patient module theme + components. Built on top of shared/css/base.css.
 
-   Visual system: soft lavender canvas, floating pill navigation, bold
-   rounded Nunito headings on DM Sans body copy, vivid purple gradient CTAs,
-   controlled clay/neumorphic shadows (soft, not inflated), and a few inert
-   floating decorative shapes. Structure/IDs/classes are unchanged from the
-   functional build — this file only changes how things look.
-   ========================================================================== */
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700;800&display=swap');
 

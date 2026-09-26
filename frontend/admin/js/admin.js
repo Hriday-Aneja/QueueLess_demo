@@ -317,6 +317,7 @@
       document.getElementById('apptTableBody').innerHTML = rows.map((r) => `
         <tr>
           <td>${escapeHtml(r.time)}</td>
+          <td>${r.token_number === null ? '—' : '#' + r.token_number}</td>
           <td>${escapeHtml(r.patient_name)}</td>
           <td>${escapeHtml(r.doctor_name)}</td>
           <td>${escapeHtml(r.department_name)}</td>

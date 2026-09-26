@@ -63,7 +63,7 @@ Request:
 ```json
 { "doctor_id": 5, "appointment_date": "2026-09-25", "slot_time": "09:00" }
 ```
-Response `data`: `{ "appointment_id": 88, "token_number": 47, "status": "WAITING" }`
+Response `data`: `{ "appointment_id": 88, "token_id": 120, "token_number": 47, "status": "waiting" }`
 
 ### POST /api/appointments/cancel
 Request: `{ "appointment_id": 88 }`  *(or `{ "token_id": 120 }` for walk-ins with no appointment)*
@@ -76,12 +76,15 @@ Response `data`: `{ "appointments": [ { "id": 88, "doctor_name": "Dr. Rao", "dat
 
 ## Tokens
 
-### POST /api/tokens/walkin  *(reception only)*
+### POST /api/tokens/walkin  *(patient, reception, or admin)*
+Patient request: `{ "doctor_id": 5 }` (the authenticated patient's profile is used).
+
+Reception/admin request:
 Request:
 ```json
 { "doctor_id": 5, "patient_name": "John Smith", "patient_phone": "8888888888", "priority": "normal" }
 ```
-Response `data`: `{ "token_id": 121, "token_number": 48, "status": "WAITING" }`
+Response `data`: `{ "token_id": 121, "token_number": 48, "status": "waiting" }`
 
 ### GET /api/tokens/get?token_id=121
 Response `data`: `{ "token_id": 121, "token_number": 48, "doctor_id": 5, "status": "WAITING" }`

@@ -203,7 +203,7 @@
         var d = new Date();
         d.setDate(d.getDate() + i);
         out.push({
-          iso: d.toISOString().slice(0, 10),
+          iso: d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"),
           dow: d.toLocaleDateString(undefined, { weekday: "short" }),
           dom: d.getDate(),
         });
@@ -902,32 +902,46 @@
 
   /* ---------------- Walk-in ---------------- */
 
-  // Patient walk-in creation is intentionally not wired: tokens/walkin.php is
-  // restricted to reception/admin roles. Walk-in tokens are created at reception.
   function renderWalkinForm() {
     var clinicSelect = $("#walkin-clinic");
     var deptSelect = $("#walkin-department");
 
     clinicSelect.innerHTML = "";
     clinicSelect.appendChild(el("option", { value: "", text: "Select a clinic" }));
-    MockDB.clinics.forEach(function (c) {
-      clinicSelect.appendChild(el("option", { value: c.id, text: c.name }));
+    deptSelect.innerHTML = "<option value=\"\">Choose a clinic first</option>";
+    deptSelect.disabled = true;
+
+    api.listClinics().then(function (res) {
+      if (!res || !res.success) {
+        toast((res && res.message) || "Couldn't load clinics. Please try again.", "danger");
+        return;
+      }
+      (res.data.clinics || []).forEach(function (clinic) {
+        clinicSelect.appendChild(el("option", { value: clinic.clinic_id, text: clinic.clinic_name }));
+      });
     });
 
-    function paintDepartments() {
-      var clinic = MockDB.clinicById(clinicSelect.value);
-      deptSelect.innerHTML = "";
-      deptSelect.appendChild(el("option", { value: "", text: clinic ? "Select a department" : "Choose a clinic first" }));
-      (clinic ? clinic.departments : []).forEach(function (d) {
-        deptSelect.appendChild(el("option", { value: d, text: d }));
-      });
-      deptSelect.disabled = !clinic;
-    }
     clinicSelect.onchange = function () {
       $("#walkin-clinic-field") && $("#walkin-clinic-field").classList.remove("has-error");
-      paintDepartments();
+      deptSelect.innerHTML = "<option value=\"\">Loading departments…</option>";
+      deptSelect.disabled = true;
+      if (!clinicSelect.value) return;
+
+      api.listDoctors(clinicSelect.value).then(function (res) {
+        if (!res || !res.success) {
+          toast((res && res.message) || "Couldn't load departments. Please try again.", "danger");
+          return;
+        }
+        deptSelect.innerHTML = "<option value=\"\">Select a department</option>";
+        (res.data.doctors || []).forEach(function (doctor) {
+          deptSelect.appendChild(el("option", {
+            value: doctor.doctor_id,
+            text: doctor.department_name + " — " + (doctor.doctor_name || doctor.doctor_code),
+          }));
+        });
+        deptSelect.disabled = !(res.data.doctors || []).length;
+      });
     };
-    paintDepartments();
   }
 
   function setupWalkinFlow() {
@@ -944,25 +958,17 @@
       var btn = $("#walkin-submit-btn");
       btn.disabled = true;
       btn.textContent = "Generating token…";
-      setTimeout(function () {
-        var clinic = MockDB.clinicById(clinicVal);
-        var newTokenNo = "W-" + String(10 + Math.floor(Math.random() * 89));
-        MockDB.currentToken = {
-          tokenNo: newTokenNo,
-          clinicId: clinic.id,
-          department: deptVal,
-          position: 4,
-          totalAhead: 4,
-          totalInQueue: 11,
-          estWaitMins: 26,
-          status: "waiting",
-          calledIn: false,
-        };
+      api.createWalkin({ doctor_id: Number(deptVal) }).then(function (res) {
         btn.disabled = false;
         btn.textContent = "Get My Token";
-        toast("Token " + newTokenNo + " generated", "success");
+        if (!res || !res.success) {
+          toast((res && res.message) || "Couldn't generate your token. Please try again.", "danger");
+          return;
+        }
+        try { localStorage.setItem("ql_patient_active_token_id", String(res.data.token_id)); } catch (e) {}
+        toast("Token #" + res.data.token_number + " generated", "success");
         navigateTo("token");
-      }, 500);
+      });
     });
   }
 
@@ -1153,10 +1159,11 @@
 
   function appointmentRow(appt, opts) {
     opts = opts || {};
+    var doctorName = appt.doctor_name || appt.doctor_code || "Doctor";
     var row = el("div", { class: "row-card", style: "cursor:default;" }, [
-      el("span", { class: "row-media", text: initials(appt.doctor_code) }),
+      el("span", { class: "row-media", text: initials(doctorName) }),
       el("span", { class: "row-body" }, [
-        el("span", { class: "row-title", text: appt.doctor_code }),
+        el("span", { class: "row-title", text: doctorName }),
         el("span", { class: "row-sub", text: appt.department_name + " · " + formatDate(appt.appointment_date) + " · " + formatTime12(appt.appointment_time) }),
       ]),
     ]);

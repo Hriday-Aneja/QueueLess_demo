@@ -195,6 +195,7 @@
 
   // Maps a getPatientAppointments() item to one row shape.
   function normalizeRow(item, patient) {
+    const name = item.doctor_name;
     const code = item.doctor_code;
     const spec = item.specialization;
     return {
@@ -203,7 +204,8 @@
       patientName: item.patient_name || (patient && patient.full_name) || '—',
       date: item.appointment_date || item.token_date || null,
       time: item.appointment_time || null,
-      doctor: code ? (spec ? `${code} · ${spec}` : code) : '—',
+      doctor: name || code ? `${name || code}${spec ? ` · ${spec}` : ''}` : '—',
+        doctor: name || code ? `${name || code}${spec ? ` · ${spec}` : ''}` : '—',
       department: item.department_name || '',
       type: item.token_type || item.appointment_type || '—',
       priority: item.priority || 'normal',

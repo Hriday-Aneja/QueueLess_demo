@@ -119,13 +119,15 @@ class Token
     public static function listForDoctorQueue(int $doctorId, string $date): array
     {
         $stmt = get_db_connection()->prepare(
-            'SELECT t.token_id, t.token_number, t.priority, t.token_type,
+                'SELECT t.token_id, t.token_number, t.priority, t.token_type,
+                    a.appointment_time,
                     qs.current_status, qs.queue_position, qs.estimated_wait_minutes,
                     u.full_name AS patient_name
              FROM tokens t
              JOIN queue_status qs ON qs.token_id = t.token_id
              JOIN patients p ON p.patient_id = t.patient_id
              LEFT JOIN users u ON u.user_id = p.user_id
+                 LEFT JOIN appointments a ON a.appointment_id = t.appointment_id
              WHERE t.doctor_id = :doctor_id AND t.token_date = :date
              ORDER BY qs.queue_position IS NULL, qs.queue_position, t.token_number'
         );

@@ -206,16 +206,17 @@ foreach ($stmt->fetchAll() as $row) {
  * ========================================================= */
 
 $stmt = $db->prepare(
-    "SELECT a.appointment_id, a.appointment_time, a.appointment_type, a.priority, a.status,
+        "SELECT a.appointment_id, a.appointment_time, a.appointment_type, a.priority, a.status,
             COALESCE(pu.full_name, CONCAT('Patient #', p.patient_id)) AS patient_name,
             COALESCE(du.full_name, d.doctor_code) AS doctor_name,
-            dep.department_name
+            dep.department_name, t.token_number
      FROM appointments a
      JOIN patients p ON p.patient_id = a.patient_id
      LEFT JOIN users pu ON pu.user_id = p.user_id
      JOIN doctors d ON d.doctor_id = a.doctor_id
      LEFT JOIN users du ON du.user_id = d.user_id
      JOIN departments dep ON dep.department_id = a.department_id
+    LEFT JOIN tokens t ON t.appointment_id = a.appointment_id
      WHERE a.appointment_date = :today
      ORDER BY a.appointment_time ASC
      LIMIT 100"
@@ -229,6 +230,7 @@ $appointments = array_map(function (array $row): array {
         'patient_name'     => $row['patient_name'],
         'doctor_name'      => $row['doctor_name'],
         'department_name'  => $row['department_name'],
+        'token_number'     => $row['token_number'] !== null ? (int) $row['token_number'] : null,
         'type'             => $row['appointment_type'],
         'priority'         => $row['priority'],
         'status'           => $row['status'],

@@ -86,7 +86,9 @@
 
     doctorLabel: function (doc) {
       var code = doc.doctor_code || 'Doctor #' + doc.doctor_id;
-      return doc.specialization ? code + ' \u00b7 ' + doc.specialization : code;
+      var name = doc.doctor_name || doc.full_name;
+      var label = name || code;
+      return doc.specialization ? label + ' \u00b7 ' + doc.specialization : label;
     },
 
     statusBadge: function (status) {
